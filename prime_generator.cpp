@@ -57,16 +57,16 @@ bool isPrime(BigInt n, int k = 30){
         //    << chrono::duration_cast<chrono::nanoseconds>(end2-start2).count()
         //    <<" ns" <<endl;
         //cout << "3" << endl;
-        if(!x.isone() && !(x == _n)){
+        if(!(x == 1) && !(x == _n)){
             BigInt j;
-            j.add_one();
+            j += 1;
             while((j < s) && !(x == _n)){
                 x = x * x;
-                x = x.modulo(n);
-                if(x.isone()){
+                x = x % n;
+                if(x == 1){
                     return false;
                 } 
-                j.add_one();
+                j += 1;
             }
             if(!(x==_n)){
                 return false;
@@ -96,12 +96,12 @@ int main(){
     //0,1,1,1,1,0,1,1,0,1,0,1});
     //a.print();
     //cout << "Prime " << isPrime(a) << endl;
-    a.prime_rand(512);
+    a.rand(512);
     int guess = 0;
     while(!isPrime(a)){
         cout << "Guess: " << guess << endl;
         a.print();
-        a.prime_rand(512);
+        a.rand(512);
     }
     cout <<"Prime"<<endl;
     a.print();

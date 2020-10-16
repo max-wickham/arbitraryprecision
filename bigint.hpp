@@ -25,9 +25,37 @@ class BigInt {
     }
     
     void rand(int n){
+        num_vec = {};
+        std::default_random_engine generator;
+        std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
         while(n > max_pow){
-            num_vec.push_front()
+            unsigned long long num;
+            num = distribution(generator);
+            num_vec.push_back(num);
+            n -= max_pow;
         }
+        if(n){
+            std::uniform_int_distribution<unsigned long long int> distribution2(1,pow(2,n)-1);
+            unsigned long long num;
+            num = distribution(generator);
+            num_vec.push_front(num);
+        }
+    }
+    void rand(BigInt n){
+        num_vec = {};
+        std::default_random_engine generator;
+        std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
+        int count = n.num_vec.size();
+        while(count){
+            unsigned long long num;
+            num = distribution(generator);
+            num_vec.push_back(num);
+            count--;
+        }
+        std::uniform_int_distribution<unsigned long long int> distribution2(1,n.num_vec[0]);
+        unsigned long long num;
+        num = distribution(generator);
+        num_vec.push_front(num);
     }
     void flatten(){
         while(!num_vec[0]){
@@ -268,6 +296,18 @@ class BigInt {
             }
         }
         return !response;
+    }
+    bool operator <(BigInt b){
+        this->flatten();
+        b.flatten();
+        if(b.num_vec.size() == num_vec.size()){
+            for(int i = 0; i < num_vec.size(); i++){
+                if(num_vec[i] != b.num_vec[i]){
+                    return num_vec[i] < b.num_vec[i];
+                }
+            }
+        }
+        return b.num_vec.size() < num_vec.size();
     }
     void operator =(BigInt b){
         this->num_vec = b.num_vec;
