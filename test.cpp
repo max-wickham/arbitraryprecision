@@ -14,7 +14,7 @@ int main(){
     //BigInt c = a % b;
     //cout << "hellp";
     //c.print();
-    //BigInt a;
-    //a.rand(67);
-    //a.print();
+    BigInt a;
+    a.rand(67);
+    a.print();
 }

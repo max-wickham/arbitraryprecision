@@ -35,13 +35,17 @@ class BigInt {
             n -= max_pow;
         }
         if(n){
+            //cout << n << endl;
+            //cout << pow(2,n)-1 << endl;
             std::uniform_int_distribution<unsigned long long int> distribution2(1,pow(2,n)-1);
             unsigned long long num;
-            num = distribution(generator);
+            num = distribution2(generator);
+            //cout << num << endl;
             num_vec.push_front(num);
         }
     }
     void rand(BigInt n){
+        cout << "end";
         num_vec = {};
         std::default_random_engine generator;
         std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
@@ -56,6 +60,7 @@ class BigInt {
         unsigned long long num;
         num = distribution(generator);
         num_vec.push_front(num);
+        
     }
     void flatten(){
         while(!num_vec[0]){
@@ -114,8 +119,8 @@ class BigInt {
         for(int i=0; i <size-1; i++){
             result.num_vec[i] = result.num_vec[i] << n;
             //result.num_vec[i] += result.num_vec[i+1] & mask;
-            cout << "i" << i << " " << ((result.num_vec[i+1] & reverse_mask) >> (max_pow -n)) << endl;
-            cout << "reverse " << reverse_mask <<endl;
+            //cout << "i" << i << " " << ((result.num_vec[i+1] & reverse_mask) >> (max_pow -n)) << endl;
+            //cout << "reverse " << reverse_mask <<endl;
             result.num_vec[i] += (result.num_vec[i+1] & reverse_mask) >> (max_pow - n);
             //remove extra bits
             result.num_vec[i] = result.num_vec[i] & max_mask;
@@ -138,7 +143,7 @@ class BigInt {
         }
         //shift each number by n and add overflow from number to the left
         for(int i=0; i <size-1; i++){
-            cout << "i" << i << endl;
+            //cout << "i" << i << endl;
             result.num_vec[size-1-i] = result.num_vec[size-1-i] >> n;
             result.num_vec[size-1-i] += (result.num_vec[size-2-i] & mask) << (max_pow - n);
         }
@@ -192,12 +197,13 @@ class BigInt {
         }
         if(!b.negative && !this->negative){
             if(b > *this){
-                cout << "stuff" <<endl << "b";
-                b.print();
+                //cout << "stuff" <<endl << "b";
+                //b.print();
                 this->print();
                 b -= *this;
                 *this = b;
                 this->negative = true;
+                return;
             }
         }else if(b.negative && this->negative){
             if(b > *this){
@@ -291,8 +297,8 @@ class BigInt {
         int b_size = b.num_vec.size();
         if(size != b_size){return size > b_size;}
         for(int i = 0; i < size; i++){
-            if(num_vec[i] > b.num_vec[i]){
-                return response;
+            if(num_vec[i] != b.num_vec[i]){
+                return !((num_vec[i] > b.num_vec[i]) ^ response);
             }
         }
         return !response;
@@ -330,15 +336,19 @@ class BigInt {
     BigInt operator %(BigInt b){
         BigInt temp;
         int max_bit = this->max_bit();
-        //cout << max_bit << endl;
+        cout << max_bit << endl;
         int b_max_bit = b.max_bit();
-        //cout << b_max_bit << endl;
+        cout << b_max_bit << endl;
         this->flatten();
         b.flatten();
         BigInt result = *this;
         while(result > b){
             //result.print();
-            temp = (b << (max_bit - b_max_bit -1));
+            temp = b;
+            if(max_bit - b_max_bit > 0){
+                temp = (temp << (max_bit - b_max_bit - 1));
+            }
+            //temp = (b << (max_bit - b_max_bit));
             //temp.print();
             while(result > temp){
                 result -= temp;
@@ -349,15 +359,16 @@ class BigInt {
         return result;
     }
     BigInt modulo_pow(BigInt b, BigInt c){
-        //cout << "hell0" << endl;
+        cout << "hell0" << endl;
         BigInt prev;
         int max = b.max_bit();
         BigInt result;
         result.num_vec = {1};
         int size = b.num_vec.size();
-
+        cout << "hell0" << endl;
         //auto start = chrono::steady_clock::now();
         for(int i=0; i<=max; i++){
+            cout << "i mod " << i << endl;
             if(i == 0){
                 prev = *this % c;
             }else{
@@ -378,5 +389,51 @@ class BigInt {
         
         return result;
     }
+    bool prime(int k = 30){
+        BigInt n = *this;
+        BigInt _n;
+        _n = n;
+        _n -= 1;
+        BigInt s;
+        BigInt r;
+        r = n;
+        cout << "running";
+        r -= 1;
+        //auto start = chrono::steady_clock::now();
+        while(r.even()){
+            s += 1;
+            r = r >> 1;
+            //r.print();
+        }
+        // auto end = chrono::steady_clock::now();
+        // cout << "Elapsed Time : "
+        //     << chrono::duration_cast<chrono::nanoseconds>(end-start).count()
+        //     <<" ns" <<endl;
 
+        for(int i=0; i < k; i++){
+            cout << "i " << i <<  endl;
+            //auto start = chrono::steady_clock::now();
+            BigInt a;
+            a.rand(_n);
+            //auto end = chrono::steady_clock::now();
+            BigInt x;
+            x = a.modulo_pow(r,n);
+            //if(!(x == 1) && !(x == _n)){
+                //BigInt j;
+                //j += 1;
+                // while((j < s) && !(x == _n)){
+                //     x = x * x;
+                //     x = x % n;
+                //     if(x == 1){
+                //         return false;
+                //     } 
+                //     j += 1;
+                // }
+                // if(!(x==_n)){
+                //     return false;
+                // }
+            //}
+        }
+        return true;
+    }
 };
