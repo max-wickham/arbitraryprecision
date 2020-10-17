@@ -8,12 +8,15 @@ using namespace std;
 int main(){
     cout << "hello";
     BigInt a;
-    a.rand(37);
+    auto start = chrono::steady_clock::now();
+    a.rand(15, start);
     int guess = 0;
     while(!a.prime()){
         cout << "Guess: " << guess << endl;
         //a.print();
-        a.rand(37);
+        a.rand(15, start);
+        a.print();
+        guess++;
     }
     cout <<"Prime"<<endl;
     a.print();

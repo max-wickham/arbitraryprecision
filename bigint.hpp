@@ -5,14 +5,15 @@
 #include <random>
 #include <deque>
 #include <chrono>
+#include <chrono>
 using namespace std;
 
 class BigInt {
     //private:
     static const long long one = 1;
     static const int max_pow = 32;
-    static const long long int max_int = (one << 32);
-    static const long long int max_mask = (one << 32) -1;
+    static const long long int max_int = (one << max_pow);
+    static const long long int max_mask = (one << max_pow) -1;
     deque<unsigned long long int> num_vec = {0};
     bool negative = false;
 
@@ -24,10 +25,13 @@ class BigInt {
         }
     }
     
-    void rand(int n){
+    void rand(int n, std::chrono::_V2::steady_clock::time_point start){
         num_vec = {};
-        std::default_random_engine generator;
+        //std::default_random_engine generator;
         std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
+        auto end = chrono::steady_clock::now();
+        int t = (int) chrono::duration_cast<chrono::nanoseconds>(end-start).count();
+        std::default_random_engine generator(t);
         while(n > max_pow){
             unsigned long long num;
             num = distribution(generator);
@@ -37,15 +41,17 @@ class BigInt {
         if(n){
             //cout << n << endl;
             //cout << pow(2,n)-1 << endl;
-            std::uniform_int_distribution<unsigned long long int> distribution2(1,pow(2,n)-1);
+            std::default_random_engine generator2;
+            unsigned long long x = pow(2,n)-1;
+            std::uniform_int_distribution<unsigned long int> distribution2(x/2+1,x);
             unsigned long long num;
             num = distribution2(generator);
             //cout << num << endl;
-            num_vec.push_front(num);
+            num_vec.push_front((unsigned long long int)num);
         }
     }
     void rand(BigInt n){
-        cout << "end";
+       //cout << "end";
         num_vec = {};
         std::default_random_engine generator;
         std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
@@ -63,7 +69,7 @@ class BigInt {
         
     }
     void flatten(){
-        while(!num_vec[0]){
+        while(!num_vec[0] && num_vec.size() > 1){
             num_vec.pop_front();
         }
     }
@@ -112,11 +118,14 @@ class BigInt {
         long long int reverse_mask = mask << (max_pow - n);
 
         //check for overflow in the biggest int and add overflow to a new entry
+        int extra = 0;
         if(result.num_vec[0] >= pow(2,max_pow-n)){
             result.num_vec.push_front(result.num_vec[0] >> (max_pow-n));
+            extra = 1;
+            size += 1;
         }
         //shift each number by n and add overflow bits from number to the right
-        for(int i=0; i <size-1; i++){
+        for(int i=extra; i <size-1; i++){
             result.num_vec[i] = result.num_vec[i] << n;
             //result.num_vec[i] += result.num_vec[i+1] & mask;
             //cout << "i" << i << " " << ((result.num_vec[i+1] & reverse_mask) >> (max_pow -n)) << endl;
@@ -222,20 +231,23 @@ class BigInt {
         int b_size = b.num_vec.size();
         int size = num_vec.size();
 
-        if(size <= b_size){
-            int difference = b_size - size;
-            for(int i=0; i<=difference; i++){
-                num_vec.push_front(0);
+        if(size > b_size){
+            int difference = size - b_size;
+            for(int i=0; i<difference; i++){
+                b.num_vec.push_front(0);
             }
-            size += (difference + 1);
+            b_size += (difference);
         }
         unsigned long long int carry = 0;
         for(int i=0; i < b_size; i++){
             if(num_vec[size-1-i] < (b.num_vec[b_size-1-i] + carry)){
                 num_vec[size-1-i] += max_int;
+                num_vec[size-1-i] -= (b.num_vec[b_size-1-i] + carry);
                 carry = 1;
-            }
-            num_vec[size-1-i] -= (b.num_vec[b_size-1-i] + carry);
+            }else{
+                num_vec[size-1-i] -= (b.num_vec[b_size-1-i] + carry);
+                carry = 0;
+            }   
         }
         this->flatten();
     }
@@ -262,11 +274,12 @@ class BigInt {
             for(int j=0; j<num_vec.size(); j++){
                 BigInt mult;
                 mult.num_vec.push_back(b.num_vec[b_size-1-i] * num_vec[size-1-j]);
+                mult.flatten();
                 if(mult.num_vec[0] > max_int){
                     //put the bits greater than 32 in a new entry
-                    mult.num_vec.push_front(mult.num_vec[0] >> 32);
+                    mult.num_vec.push_front(mult.num_vec[0] >> max_pow);
                     //use a bit mask to remove bits greater than 32 from original entry
-                    mult.num_vec[0] = mult.num_vec[0] & (max_int - 1);
+                    mult.num_vec[1] = mult.num_vec[1] & max_mask;
                 }
                 for(int n=0; n < (i+j); n++){
                     mult.num_vec.push_back(0);
@@ -336,9 +349,9 @@ class BigInt {
     BigInt operator %(BigInt b){
         BigInt temp;
         int max_bit = this->max_bit();
-        cout << max_bit << endl;
+       //cout << max_bit << endl;
         int b_max_bit = b.max_bit();
-        cout << b_max_bit << endl;
+       //cout << b_max_bit << endl;
         this->flatten();
         b.flatten();
         BigInt result = *this;
@@ -358,39 +371,57 @@ class BigInt {
         }
         return result;
     }
-    BigInt modulo_pow(BigInt b, BigInt c){
-        cout << "hell0" << endl;
-        BigInt prev;
-        int max = b.max_bit();
-        BigInt result;
-        result.num_vec = {1};
-        int size = b.num_vec.size();
-        cout << "hell0" << endl;
-        //auto start = chrono::steady_clock::now();
-        for(int i=0; i<=max; i++){
-            cout << "i mod " << i << endl;
-            if(i == 0){
-                prev = *this % c;
-            }else{
-                prev = (prev*prev);
-                prev = prev % c;
-            }
-            if(b.num_vec[size-1-i]){
-                result = result * prev;
-            }
-        }
-        //auto end = chrono::steady_clock::now();
-        // cout << "Forloop Time : "
-        //     << chrono::duration_cast<chrono::nanoseconds>(end-start).count()
-        //     <<" ns" <<endl;
+    BigInt modulo_pow(BigInt e, BigInt m){
+        // cout << "hell0" << endl;
+        // BigInt prev;
+        // int max = b.max_bit();
+        // BigInt result;
+        // result.num_vec = {1};
+        // int size = b.num_vec.size();
+        // cout << "hell0" << endl;
+        // //auto start = chrono::steady_clock::now();
+        // for(int i=0; i<=max; i++){
+        //     cout << "i mod " << i << endl;
+        //     if(i == 0){
+        //         prev = *this % c;
+        //     }else{
+        //         prev = (prev*prev);
+        //         prev = prev % c;
+        //     }
+        //     if(b.num_vec[size-1-(int)(i/max_pow)]){
+        //         result = result * prev;
+        //     }
+        // }
+        // //auto end = chrono::steady_clock::now();
+        // // cout << "Forloop Time : "
+        // //     << chrono::duration_cast<chrono::nanoseconds>(end-start).count()
+        // //     <<" ns" <<endl;
 
-        result = result % c;
-        result.flatten();
+        // result = result % c;
+        // result.flatten();
         
+        // return result;
+        BigInt result({1});
+        BigInt b = *this;
+        b = b % m;
+        BigInt zero({0});
+        while(e > zero){
+            if(e.num_vec[e.num_vec.size()-1]%2 == 1){
+                result = (result * b) % m;
+            }
+            e = e >> 1;
+            b = (b * b) % m;
+        }
         return result;
     }
     bool prime(int k = 30){
         BigInt n = *this;
+        this->flatten();
+        if(this->num_vec.size() == 1){
+            if(this->num_vec[0] == 1){
+                return false;
+            }            
+        }
         BigInt _n;
         _n = n;
         _n -= 1;
@@ -411,28 +442,28 @@ class BigInt {
         //     <<" ns" <<endl;
 
         for(int i=0; i < k; i++){
-            cout << "i " << i <<  endl;
+            //cout << "i " << i <<  endl;
             //auto start = chrono::steady_clock::now();
             BigInt a;
             a.rand(_n);
             //auto end = chrono::steady_clock::now();
             BigInt x;
             x = a.modulo_pow(r,n);
-            //if(!(x == 1) && !(x == _n)){
-                //BigInt j;
-                //j += 1;
-                // while((j < s) && !(x == _n)){
-                //     x = x * x;
-                //     x = x % n;
-                //     if(x == 1){
-                //         return false;
-                //     } 
-                //     j += 1;
-                // }
-                // if(!(x==_n)){
-                //     return false;
-                // }
-            //}
+            if(!(x == 1) && !(x == _n)){
+                BigInt j;
+                j += 1;
+                while((j < s) && !(x == _n)){
+                    x = x * x;
+                    x = x % n;
+                    if(x == 1){
+                        return false;
+                    } 
+                    j += 1;
+                }
+                if(!(x==_n)){
+                    return false;
+                }
+            }
         }
         return true;
     }

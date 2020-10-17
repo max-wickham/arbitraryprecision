@@ -18,3 +18,5 @@ int main(){
     a.rand(67);
     a.print();
 }
+
+        
