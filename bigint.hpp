@@ -49,11 +49,17 @@ class BigInt {
             //cout << num << endl;
             num_vec.push_front((unsigned long long int)num);
         }
+        //if(num_vec[num_vec.size()-1] % 2 ==0){
+        if(!(num_vec[num_vec.size()-1]&1)){
+            num_vec[num_vec.size()-1] += 1;
+        }
     }
-    void rand(BigInt n){
+    void rand(BigInt n, std::chrono::_V2::steady_clock::time_point start){
        //cout << "end";
         num_vec = {};
-        std::default_random_engine generator;
+        auto end = chrono::steady_clock::now();
+        int t = (int) chrono::duration_cast<chrono::nanoseconds>(end-start).count();
+        std::default_random_engine generator(t);
         std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
         int count = n.num_vec.size();
         while(count){
@@ -88,17 +94,16 @@ class BigInt {
     //returns the position of the msb 
     int max_bit(){
         this->flatten();
-        //this->print();
-        //cout <<endl;
-        num_vec[0] = num_vec[0] & max_mask;
-        //this->print();
-        //cout <<endl;
-        //cout << max_mask;
-        //cout <<endl;
+        //num_vec[0] = num_vec[0] & max_mask;
         unsigned long long int bits = num_vec[0];
-        int n = max_pow;
-        while(!(bits & (one << (n -1) ) ) ){
-            n -= 1;
+        //int n = max_pow;
+        //while(!(bits & (one << (n -1) ) ) ){
+        //   n -= 1;
+        //}
+        int n = 0;
+        while(bits){
+            n += 1;
+            bits = bits >> 1;
         }
         return (n + (num_vec.size()-1) * max_pow);
     }
@@ -107,13 +112,11 @@ class BigInt {
         BigInt result;
         result.num_vec = num_vec;
         int size = result.num_vec.size();
-
         //add a 0 untill n is less than max pow
         while(n > max_pow){
             result.num_vec.push_back(0);
             n -= max_pow; 
         }
-
         long long int mask = (one << n)-1;
         long long int reverse_mask = mask << (max_pow - n);
 
@@ -159,45 +162,80 @@ class BigInt {
         result.num_vec[0] = result.num_vec[0] >> n;
         return result;
     }
-    void operator +=(BigInt b){
-        if(b.negative && !this->negative){
-            if(b>*this){
-                this->negative = true;
+    void operator +=(BigInt &b){
+        if(b.negative){
+            if(!this->negative){
+                this->negative = b>*this;
+                *this -= b;
+                return;
             }
-            *this -= b;
-            return;
-        }else if(!b.negative && this->negative){
+        }else if (this->negative){
             if(b>*this){
                 this->negative = false;
-                b -= *this;
-                *this = b;
+                BigInt c;
+                c = b;
+                c -= *this;
+                //b -= *this;
+                *this = c;
+                return;
             }
             *this -= b;
             return;
         }
+        //if(b.negative && !this->negative){
+        //    if(b>*this){
+        //        this->negative = true;
+        //    }
+         //   *this -= b;
+        //    return;
+        // }else if(!b.negative && this->negative){
+        //     if(b>*this){
+        //         this->negative = false;
+        //         b -= *this;
+        //         *this = b;
+        //     }
+        //     *this -= b;
+        //     return;
+        // }
         int b_size = b.num_vec.size();
         int size = num_vec.size();
         if(size <= b_size){
-            int difference = b_size - size;
-            for(int i=0; i<=difference; i++){
-                num_vec.push_front(0);
-            }
-            size += (difference + 1);
+            //int difference = b_size - size;
+            //for(int i=0; i<=difference; i++){
+            //    num_vec.push_front(0);
+            //}
+            auto it = num_vec.end();
+            num_vec.insert(it,0,b_size - size+1);
+            size = b_size + 1;
+
         }
-        unsigned long long int carry = 0;
+        bool carry = 0;
+        int index = size-1;
         for(int i=0; i < b_size; i++){
             // /cout << i << endl;
-            num_vec[size-1-i] += b.num_vec[b_size-1-i] + carry;
-            if(num_vec[size-1-i] > max_int){
+            num_vec[index] += b.num_vec[b_size-1-i] + carry;
+            if(num_vec[index] > max_int){
                 //carry = num_vec[size-1-i] << max_pow;
                 carry = 1;
-                num_vec[size-1-i] -= max_int;
+                num_vec[index] -= max_int;
             }
+            else{carry = 0;}
+            index --;
         }
-        if(carry){
-            num_vec[0] = carry;
+        while(carry){
+            num_vec[index] += carry;
+            if(num_vec[index] > max_int){
+                //carry = num_vec[size-1-i] << max_pow;
+                carry = 1;
+                num_vec[index] = 0;
+            }
+            else{carry = 0;}
+            index --;
         }
         this->flatten();
+        // if(num_vec[0] == 0){
+        //     num_vec.pop_front();
+        // }
     }
     //working
     void operator -=(BigInt b){
@@ -265,31 +303,35 @@ class BigInt {
         num_vec = d.num_vec;
         negative = d.negative;
     }
-    BigInt operator *(BigInt b){
+    BigInt operator *(BigInt &b){
         vector<BigInt> pows;
         BigInt result;
         int size = num_vec.size();
         int b_size = b.num_vec.size();
-        for(int i=0; i <b_size; i++){
-            for(int j=0; j<num_vec.size(); j++){
-                BigInt mult;
+        BigInt mult;
+        for(int i=0; i<b_size; i++){
+            for(int j=0; j<size; j++){
+                mult.num_vec.clear();
                 mult.num_vec.push_back(b.num_vec[b_size-1-i] * num_vec[size-1-j]);
-                mult.flatten();
+                //mult.flatten();
                 if(mult.num_vec[0] > max_int){
                     //put the bits greater than 32 in a new entry
                     mult.num_vec.push_front(mult.num_vec[0] >> max_pow);
                     //use a bit mask to remove bits greater than 32 from original entry
                     mult.num_vec[1] = mult.num_vec[1] & max_mask;
                 }
-                for(int n=0; n < (i+j); n++){
-                    mult.num_vec.push_back(0);
-                }
-                pows.push_back(mult);
+                //for(int n=0; n < (i+j); n++){
+                //    mult.num_vec.push_back(0);
+                //}
+                auto it = mult.num_vec.end();
+                mult.num_vec.insert(it,0,i+j);
+                result += mult;
+                //pows.push_back(mult);
             }
         }
-        for(int i=0; i < pows.size(); i++){
-            result += pows[i];
-        }
+        //for(int i=0; i < pows.size(); i++){
+        //    result += pows[i];
+        //}
         return result;
     }
     BigInt operator /(BigInt b){
@@ -406,7 +448,8 @@ class BigInt {
         b = b % m;
         BigInt zero({0});
         while(e > zero){
-            if(e.num_vec[e.num_vec.size()-1]%2 == 1){
+            //if(e.num_vec[e.num_vec.size()-1]%2 == 1){
+            if(e.num_vec[e.num_vec.size()-1]&1){    
                 result = (result * b) % m;
             }
             e = e >> 1;
@@ -414,7 +457,8 @@ class BigInt {
         }
         return result;
     }
-    bool prime(int k = 30){
+    bool prime(int k = 6){
+        auto start = chrono::steady_clock::now();
         BigInt n = *this;
         this->flatten();
         if(this->num_vec.size() == 1){
@@ -428,7 +472,7 @@ class BigInt {
         BigInt s;
         BigInt r;
         r = n;
-        cout << "running";
+        //cout << "running";
         r -= 1;
         //auto start = chrono::steady_clock::now();
         while(r.even()){
@@ -445,7 +489,7 @@ class BigInt {
             //cout << "i " << i <<  endl;
             //auto start = chrono::steady_clock::now();
             BigInt a;
-            a.rand(_n);
+            a.rand(_n,start);
             //auto end = chrono::steady_clock::now();
             BigInt x;
             x = a.modulo_pow(r,n);
