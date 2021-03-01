@@ -81,6 +81,8 @@ class BigInt{
             }
         }
     }
+    
+    public: 
     void multiplication(BigInt &b, BigInt &c){
         // vector<BigInt> pows;
         // BigInt result;
@@ -127,7 +129,6 @@ class BigInt{
         }
         c.size = c.digits.size();
     }   
-    public: 
     BigInt(){}
     BigInt (vector<unsigned int> _digits){
         digits = _digits;

@@ -48,6 +48,9 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "compare": "cpp",
+        "ranges": "cpp",
+        "ios": "cpp"
     }
 }

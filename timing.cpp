@@ -2,7 +2,7 @@
 #include <cmath>
 #include <iostream>
 //#include "bigint.hpp"
-#include "BigInt2.hpp"
+#include "bigint.hpp"
 #include <chrono>
 using namespace std;
 

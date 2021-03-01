@@ -5,510 +5,758 @@
 #include <random>
 #include <deque>
 #include <chrono>
-#include <chrono>
+#include <cstring>
+#include <algorithm>
+#include <cstdlib>   
 using namespace std;
 
-class BigInt {
-    //private:
-    static const long long one = 1;
-    static const int max_pow = 32;
-    static const long long int max_int = (one << max_pow);
-    static const long long int max_mask = (one << max_pow) -1;
-    deque<unsigned long long int> num_vec = {0};
-    bool negative = false;
+const unsigned int one = 1;
+const int max_pow = 16;
+const unsigned int max_int = (one << max_pow);
+const unsigned int max_mask = (one << max_pow) - 1;
 
-    public:
-    BigInt(){}
-    BigInt (vector<unsigned long long int> _num_vec){
-        for(auto x: _num_vec){
-            num_vec.push_back(x);
+//max bit constants
+const unsigned int left = 65280;
+const unsigned int left_right_left = 3072;
+const unsigned int left_right_left_left = 2048;
+const unsigned int left_right_right_left = 512;
+const unsigned int left_left = 61440;
+const unsigned int left_left_left = 49152;
+const unsigned int left_left_left_left = 32768;
+const unsigned int left_left_right_left = 8192;
+const unsigned int right_left = 240;
+const unsigned int right_left_left = 192;
+const unsigned int right_right_left = 12;
+const unsigned int right_left_left_left = 128;
+const unsigned int right_left_right_left = 32;
+const unsigned int right_right_left_left = 8;
+const unsigned int right_right_right_left = 2;
+ 
+//const int base = pow(2,max_pow);
+
+class BigInt{
+
+    bool negative = false;
+    int size;
+    vector<unsigned int> digits;
+
+    void flatten(){
+        this->size = this->digits.size();
+        while((digits[this->size - 1] == 0) && (this->size > 1)){
+            this->digits.erase(this->digits.end() -1);
+            this->size--;
         }
+    }
+
+    int max_bit (){
+        this->flatten();
+
+        if(size == 0){
+            return 0;
+        }
+
+        unsigned int num = this->digits[this->size-1];
+        int result =  (this->size - 1) * max_pow;
+        // while((num & max_mask)){
+        //     result++;
+        //     num >>= 1;
+        // }
+        // return result;
+        if(num & 65280u){
+            if(num & left_left){
+                if(num & left_left_left){
+                    return ((num & left_left_left_left)?16:15 + result);      
+                }else{
+                    return ((num & left_left_right_left)?14:13 + result);
+                }
+            }else{
+                if(num & left_right_left){
+                    return ((num & left_right_left_left)?12:11) + result;      
+                }else{
+                    return ((num & left_right_right_left)?10:9) + result;
+                }
+            }
+        }else{
+            if(num & right_left){
+                if(num & right_left_left){
+                    return ((num & right_left_left_left)?8:7) + result;      
+                }else{
+                    return ((num & right_left_right_left)?6:5) + result;
+                }
+            }else{
+                if(num & right_right_left){
+                    return ((num & right_right_left_left)?4:3) + result;      
+                }else{
+                    return ((num & right_right_right_left)?2:1) + result;
+                }
+            }
+        }
+
+    }
+
+    public: 
+    
+    //Random number generation
+
+    void random(int bits){
+        digits.clear();
+        size = 0;
+
+        while(bits >= max_pow){
+            digits.push_back(rand() & max_mask);
+            bits -= max_pow;
+        }
+        if(bits != 0){
+            int mask = (1 << bits) - 1;
+            this->digits.push_back(rand() & mask);
+        }
+        this->size = this->digits.size();
+        this->flatten();
     }
     
-    void rand(int n, std::chrono::_V2::steady_clock::time_point start){
-        num_vec = {};
-        //std::default_random_engine generator;
-        std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
-        auto end = chrono::steady_clock::now();
-        int t = (int) chrono::duration_cast<chrono::nanoseconds>(end-start).count();
-        std::default_random_engine generator(t);
-        while(n > max_pow){
-            unsigned long long num;
-            num = distribution(generator);
-            num_vec.push_back(num);
-            n -= max_pow;
+    void random(const BigInt &maximum){
+        this->digits.clear();
+        for(int i = 0; i < maximum.size - 1; i++){
+            digits.push_back((rand() & max_mask));
         }
-        if(n){
-            //cout << n << endl;
-            //cout << pow(2,n)-1 << endl;
-            std::default_random_engine generator2;
-            unsigned long long x = pow(2,n)-1;
-            std::uniform_int_distribution<unsigned long int> distribution2(x/2+1,x);
-            unsigned long long num;
-            num = distribution2(generator);
-            //cout << num << endl;
-            num_vec.push_front((unsigned long long int)num);
-        }
-        //if(num_vec[num_vec.size()-1] % 2 ==0){
-        if(!(num_vec[num_vec.size()-1]&1)){
-            num_vec[num_vec.size()-1] += 1;
-        }
+        digits.push_back(((rand()&max_mask) % maximum.digits[maximum.size - 1]));
     }
-    void rand(BigInt n, std::chrono::_V2::steady_clock::time_point start){
-       //cout << "end";
-        num_vec = {};
-        auto end = chrono::steady_clock::now();
-        int t = (int) chrono::duration_cast<chrono::nanoseconds>(end-start).count();
-        std::default_random_engine generator(t);
-        std::uniform_int_distribution<unsigned long long int> distribution(1,pow(2,32)-1);
-        int count = n.num_vec.size();
-        while(count){
-            unsigned long long num;
-            num = distribution(generator);
-            num_vec.push_back(num);
-            count--;
-        }
-        std::uniform_int_distribution<unsigned long long int> distribution2(1,n.num_vec[0]);
-        unsigned long long num;
-        num = distribution(generator);
-        num_vec.push_front(num);
-        
-    }
-    void flatten(){
-        while(!num_vec[0] && num_vec.size() > 1){
-            num_vec.pop_front();
-        }
-    }
-    void set_vec(deque<unsigned long long int> vec){
-        num_vec = vec;
-    }
-    void print(){
-        for(int i = 0; i < num_vec.size(); i++){
-            cout << " " << num_vec[i];
-        }
-        cout <<endl;
-    }
-    bool even(){
-        return !(num_vec[num_vec.size()-1] & 1);
-    }
-    //returns the position of the msb 
-    int max_bit(){
-        this->flatten();
-        //num_vec[0] = num_vec[0] & max_mask;
-        unsigned long long int bits = num_vec[0];
-        //int n = max_pow;
-        //while(!(bits & (one << (n -1) ) ) ){
-        //   n -= 1;
-        //}
-        int n = 0;
-        while(bits){
-            n += 1;
-            bits = bits >> 1;
-        }
-        return (n + (num_vec.size()-1) * max_pow);
-    }
-    //working
-    BigInt operator <<(int n){
-        BigInt result;
-        result.num_vec = num_vec;
-        int size = result.num_vec.size();
-        //add a 0 untill n is less than max pow
-        while(n > max_pow){
-            result.num_vec.push_back(0);
-            n -= max_pow; 
-        }
-        long long int mask = (one << n)-1;
-        long long int reverse_mask = mask << (max_pow - n);
+    
+    //Bitwise Operators
 
-        //check for overflow in the biggest int and add overflow to a new entry
-        int extra = 0;
-        if(result.num_vec[0] >= pow(2,max_pow-n)){
-            result.num_vec.push_front(result.num_vec[0] >> (max_pow-n));
-            extra = 1;
-            size += 1;
-        }
-        //shift each number by n and add overflow bits from number to the right
-        for(int i=extra; i <size-1; i++){
-            result.num_vec[i] = result.num_vec[i] << n;
-            //result.num_vec[i] += result.num_vec[i+1] & mask;
-            //cout << "i" << i << " " << ((result.num_vec[i+1] & reverse_mask) >> (max_pow -n)) << endl;
-            //cout << "reverse " << reverse_mask <<endl;
-            result.num_vec[i] += (result.num_vec[i+1] & reverse_mask) >> (max_pow - n);
-            //remove extra bits
-            result.num_vec[i] = result.num_vec[i] & max_mask;
-        }
-        result.num_vec[size-1] = result.num_vec[size-1] << n;
-        result.num_vec[size-1] = result.num_vec[size-1] & max_mask;
-        return result;
-    }
-    //working
-    BigInt operator >>(int n){
-        BigInt result;
-        result.num_vec = num_vec;
-        int size = result.num_vec.size();
-        long long int mask = (one << n)-1;
+    void  bitwise_and_self(const BigInt &b); //unfinished
 
-        //add a 0 untill n is less than max pow
-        while(n > max_pow){
-            result.num_vec.pop_back();
-            n -= max_pow;
-        }
-        //shift each number by n and add overflow from number to the left
-        for(int i=0; i <size-1; i++){
-            //cout << "i" << i << endl;
-            result.num_vec[size-1-i] = result.num_vec[size-1-i] >> n;
-            result.num_vec[size-1-i] += (result.num_vec[size-2-i] & mask) << (max_pow - n);
-        }
-        result.num_vec[0] = result.num_vec[0] >> n;
-        return result;
-    }
-    void operator +=(BigInt &b){
-        if(b.negative){
-            if(!this->negative){
-                this->negative = b>*this;
-                *this -= b;
-                return;
-            }
-        }else if (this->negative){
-            if(b>*this){
-                this->negative = false;
-                BigInt c;
-                c = b;
-                c -= *this;
-                //b -= *this;
-                *this = c;
-                return;
-            }
-            *this -= b;
-            return;
-        }
-        //if(b.negative && !this->negative){
-        //    if(b>*this){
-        //        this->negative = true;
-        //    }
-         //   *this -= b;
-        //    return;
-        // }else if(!b.negative && this->negative){
-        //     if(b>*this){
-        //         this->negative = false;
-        //         b -= *this;
-        //         *this = b;
-        //     }
-        //     *this -= b;
-        //     return;
-        // }
-        int b_size = b.num_vec.size();
-        int size = num_vec.size();
-        if(size <= b_size){
-            //int difference = b_size - size;
-            //for(int i=0; i<=difference; i++){
-            //    num_vec.push_front(0);
-            //}
-            auto it = num_vec.end();
-            num_vec.insert(it,0,b_size - size+1);
-            size = b_size + 1;
+    void  bitwise_or_self(const BigInt &b); //unfinished
 
-        }
-        bool carry = 0;
-        int index = size-1;
-        for(int i=0; i < b_size; i++){
-            // /cout << i << endl;
-            num_vec[index] += b.num_vec[b_size-1-i] + carry;
-            if(num_vec[index] > max_int){
-                //carry = num_vec[size-1-i] << max_pow;
-                carry = 1;
-                num_vec[index] -= max_int;
-            }
-            else{carry = 0;}
-            index --;
-        }
-        while(carry){
-            num_vec[index] += carry;
-            if(num_vec[index] > max_int){
-                //carry = num_vec[size-1-i] << max_pow;
-                carry = 1;
-                num_vec[index] = 0;
-            }
-            else{carry = 0;}
-            index --;
-        }
-        this->flatten();
-        // if(num_vec[0] == 0){
-        //     num_vec.pop_front();
-        // }
-    }
-    //working
-    void operator -=(BigInt b){
-        if((b.negative && !this->negative) || (!b.negative && this->negative)){
-            *this += b;
-        }
-        if(!b.negative && !this->negative){
-            if(b > *this){
-                //cout << "stuff" <<endl << "b";
-                //b.print();
-                this->print();
-                b -= *this;
-                *this = b;
-                this->negative = true;
-                return;
-            }
-        }else if(b.negative && this->negative){
-            if(b > *this){
-                b.negative = false;
-                this->negative = false;
-                b -= *this;
-                *this = b;
-                return;
-            }
-            b.negative = false;
-            this->negative = false;
-            *this -= b;
-            this->negative = true;
-            return;
-        }
-        int b_size = b.num_vec.size();
-        int size = num_vec.size();
+    void  bitwise_xor_self(const BigInt &b); //unfinished
 
-        if(size > b_size){
-            int difference = size - b_size;
-            for(int i=0; i<difference; i++){
-                b.num_vec.push_front(0);
-            }
-            b_size += (difference);
-        }
-        unsigned long long int carry = 0;
-        for(int i=0; i < b_size; i++){
-            if(num_vec[size-1-i] < (b.num_vec[b_size-1-i] + carry)){
-                num_vec[size-1-i] += max_int;
-                num_vec[size-1-i] -= (b.num_vec[b_size-1-i] + carry);
-                carry = 1;
-            }else{
-                num_vec[size-1-i] -= (b.num_vec[b_size-1-i] + carry);
-                carry = 0;
-            }   
-        }
-        this->flatten();
-    }
-    void operator -=(int b){
-        BigInt c({(unsigned long long)b});
-        BigInt d = *this;
-        d -= c;
-        num_vec = d.num_vec;
-        negative = d.negative;
-    }
-    void operator +=(int b){
-        BigInt c({(unsigned long long)b});
-        BigInt d = *this;
-        d += c;
-        num_vec = d.num_vec;
-        negative = d.negative;
-    }
-    BigInt operator *(BigInt &b){
-        vector<BigInt> pows;
-        BigInt result;
-        int size = num_vec.size();
-        int b_size = b.num_vec.size();
-        BigInt mult;
-        for(int i=0; i<b_size; i++){
-            for(int j=0; j<size; j++){
-                mult.num_vec.clear();
-                mult.num_vec.push_back(b.num_vec[b_size-1-i] * num_vec[size-1-j]);
-                //mult.flatten();
-                if(mult.num_vec[0] > max_int){
-                    //put the bits greater than 32 in a new entry
-                    mult.num_vec.push_front(mult.num_vec[0] >> max_pow);
-                    //use a bit mask to remove bits greater than 32 from original entry
-                    mult.num_vec[1] = mult.num_vec[1] & max_mask;
-                }
-                //for(int n=0; n < (i+j); n++){
-                //    mult.num_vec.push_back(0);
-                //}
-                auto it = mult.num_vec.end();
-                mult.num_vec.insert(it,0,i+j);
-                result += mult;
-                //pows.push_back(mult);
-            }
-        }
-        //for(int i=0; i < pows.size(); i++){
-        //    result += pows[i];
-        //}
-        return result;
-    }
-    BigInt operator /(BigInt b){
-        BigInt result;
-        
+    void  bitwise_not_self(); //unfinished
+    
+    //Comparators
 
-
-        return result;
-    }
-    //working
-    bool operator >(BigInt b){
-        if(negative && !b.negative){return false;}
-        if(!negative && b.negative){return true;}
-        bool response = (!negative && !b.negative);
-        this->flatten();
-        b.flatten();
-        int size = num_vec.size();
-        int b_size = b.num_vec.size();
-        if(size != b_size){return size > b_size;}
-        for(int i = 0; i < size; i++){
-            if(num_vec[i] != b.num_vec[i]){
-                return !((num_vec[i] > b.num_vec[i]) ^ response);
-            }
+    bool equal (const BigInt &b){
+        if(this->size != b.size){
+            return false;
         }
-        return !response;
-    }
-    bool operator <(BigInt b){
-        this->flatten();
-        b.flatten();
-        if(b.num_vec.size() == num_vec.size()){
-            for(int i = 0; i < num_vec.size(); i++){
-                if(num_vec[i] != b.num_vec[i]){
-                    return num_vec[i] < b.num_vec[i];
-                }
+        for(int i = 0; i < this->size; i++){
+            if(this->digits[i] != b.digits[i]){
+                return false;
             }
-        }
-        return b.num_vec.size() < num_vec.size();
-    }
-    void operator =(BigInt b){
-        this->num_vec = b.num_vec;
-    }
-    bool operator ==(int b){
-        this->flatten();
-        if(num_vec.size() != 1){return false;}
-        return num_vec[0] == b;
-    }
-    bool operator ==(BigInt b){
-        b.flatten();
-        this->flatten();
-        if(b.num_vec.size() != num_vec.size()){return false;}
-        for(int i = 0; i < num_vec.size(); i++){
-            if(num_vec[i]!= b.num_vec[i]){return false;}
         }
         return true;
     }
 
-    BigInt operator %(BigInt b){
-        BigInt temp;
-        int max_bit = this->max_bit();
-       //cout << max_bit << endl;
-        int b_max_bit = b.max_bit();
-       //cout << b_max_bit << endl;
+    bool equal (int b){
+        if(size != 1){
+            return false;
+        }
+        return this->digits[0] == b;
+    }
+
+    bool greater_than(const BigInt &b){
+        if(b.size != this->size){
+            bool x = (b.size < this->size);
+            return (b.size < this->size);
+        }
+        for(int i = this->size - 1; i >= 0; i--){
+            if(this->digits[i] != b.digits[i]){
+                return this->digits[i] > b.digits[i];
+            }
+        }
+        return false;
+    }
+    
+    bool greater_than_equal (const BigInt &b); //unfinished
+
+    bool less_than (const BigInt &b){
+        if(size != b.size){
+            return b.size > size;
+        }
+        for(int i = size - 1; i >= 0; i--){
+            if(b.digits[i] != digits[i]){
+                return b.digits[i] > digits[i];
+            }
+        }
+        return false;
+    }
+
+    bool less_than_equal (const BigInt &b){
+        if(size != b.size){
+            return b.size > size;
+        }
+        for(int i = size - 1; i >= 0; i++){
+            if(b.digits[i] != digits[i]){
+                return b.digits[i] > digits[i];
+            }
+        }
+        return true;
+    }
+    
+    //Shifting
+
+    void shift_right_self(int x){
+        // this->flatten(); //shouldnt be needed
+        // int size = this->digits.size();
+
+        while(x >= max_pow){
+            this->digits.erase(this->digits.begin());
+            x -= max_pow;
+        }
+        int mask = (1 << (x)) - 1;
+        for(int i = 0; i <  this->size - 1; i++){
+             this->digits[i] =  (this->digits[i] >> x) +  ((this->digits[i+1] & mask) << (max_pow - x));
+        }
+        this->digits[size - 1] = this->digits[size - 1] >> x;
+
         this->flatten();
-        b.flatten();
+        size = digits.size();
+    }
+
+    void shift_left_self(int x){
+        this->flatten();
+
+        this->digits.push_back(0);
+        this->size += 1;
+        int count = 0;
+        while(x >= max_pow){
+            count ++;
+            //this->digits.erase(this->digits.begin());
+            //this->digits.push_front(0);
+            x -= max_pow;
+        }
+        if(count != 0){
+            this->size += count;
+            vector<unsigned int> zeros(count,0);
+            for(auto i: this->digits){
+                zeros.push_back(i);
+            }
+            //zeros.insert(zeros.end(), this->digits.begin(), this->digits.end()); 
+            this->digits = zeros;
+        }
+        int mask = max_mask - ((1 << (max_pow - x)) - 1);
+        for(int i = this->size - 1; i >  0; i--){
+             this->digits[i] =  ((this->digits[i] << x) & max_mask)  +  ((this->digits[i-1] & mask) >>  (max_pow - x));
+        }
+        this->digits[0] = ((this->digits[0] << x) & max_mask);
+
+        this->flatten();
+    }
+
+    BigInt shift_right(int x); //unfinished
+
+    BigInt shift_left(int x); //unfinished
+
+    //Addition and Subtraction
+
+    void subtraction_self_unsigned(const BigInt &b){
+        int carry = 0;
+        int i;
+        int digitandcarry;
+        for(i = 0; i < b.size; i++){
+            digitandcarry = digits[i] - carry;
+            bool temp = ((digitandcarry) < (int)b.digits[i]);
+            digits[i] = (((1 << max_pow) + digits[i] - carry - b.digits[i]) & max_mask);
+            carry = temp;
+        }
+        for(; i < this->size; i++){
+            //carry += digits[i];
+            if(!carry){break;}
+            digitandcarry = digits[i] - carry;
+            bool temp = (digitandcarry) < 0;
+            digits[i] = ((1 << max_pow) + digitandcarry) & max_mask;
+            carry = temp;
+        }
+
+        this->flatten();
+    }
+
+    void subtraction_self(const BigInt &b){
+        if(this->greater_than(b)){
+            if(this->negative){
+                if(b.negative){
+                    this->subtraction_self_unsigned(b);
+                }else{
+                    this->addition_self_unsigned(b);
+                }
+            }else{
+                if(b.negative){
+                    this->addition_self_unsigned(b);
+                }else{
+                    this->subtraction_self_unsigned(b);
+                }
+            }
+        }else{
+            if(this->negative){
+                if(b.negative){
+                    BigInt temp = b;
+                    temp.subtraction_self_unsigned(*this);
+                    *this = temp;
+                    this->negative = !this->negative;
+                }else{
+                    this->addition_self_unsigned(b);
+                }
+            }else{
+                if(b.negative){
+                    this->addition_self_unsigned(b);
+                }else{
+                    BigInt temp = b;
+                    temp.subtraction_self_unsigned(*this);
+                    *this = temp;
+                    this->negative = !this->negative;
+                }
+            }
+        }
+    }
+
+    void subtraction_self_unsigned(const int &b){
+        int carry = 0;
+        int digitandcarry;
+        int i = 1;
+        digitandcarry = digits[0] - carry;
+        bool temp = (digitandcarry) < b;
+        digits[0] = ((1 << max_pow) + digitandcarry - b) & max_mask;
+        carry >>= temp;
+        
+        for(; i < this->size; i++){
+            carry += digits[i];
+            digitandcarry = digits[i] - carry;
+            bool temp = (digitandcarry) >= 0;
+            digits[i] = ((1 << max_pow) + digitandcarry) & max_mask;
+            carry = temp;
+            if(!carry){break;}
+        }
+
+        this->flatten();
+        this->size = digits.size();
+    }
+    
+    BigInt subtraction(const BigInt &b); //unfinished
+    
+    void addition_self_unsigned(const BigInt &b){
+        unsigned int carry = 0;
+        int i;
+        if(size >= b.size){
+            for(i = 0; i < b.size; i++){
+                carry += digits[i] + b.digits[i];
+                digits[i] = carry & max_mask;
+                carry >>= max_pow;
+            }
+            for(; i < size; i++){
+                carry += digits[i];
+                digits[i] = carry & max_mask;
+                carry >>= max_pow;
+                if(!carry){break;}
+            }
+            if(carry){
+                digits[i] = carry;
+                size++;
+            }
+        }else{
+            for(i = 0; i < size; i++){
+                carry += digits[i] + b.digits[i];
+                digits[i] = carry & max_mask;
+                carry >>= max_pow;
+            }
+            for(; i < b.size; i++){
+                carry += b.digits[i];
+                digits.push_back(carry & max_mask);
+                carry >>= max_pow;
+            }
+            size = b.size;
+            if(carry){
+                digits[i] = carry;
+                size++;
+            }
+        }
+
+        this->flatten();
+        size = digits.size();
+    }
+    
+    void addition_self_unsigned(const int &b){
+        if(this->size == 0){
+            this->size = 1;
+            digits.push_back(0);
+        }
+        unsigned int carry = 0;
+        carry += digits[0] + b;
+        digits[0] = carry & max_mask;
+        carry >>= max_pow;
+        int i = 1;
+        for(; i < this->size; i++){
+            carry += digits[i];
+            digits[i] = carry & max_mask;
+            carry >>= max_pow;
+            if(!carry){break;}
+        }
+        if(carry){
+            digits[i] = carry;
+            this->size++;
+        }
+        this->flatten();
+        this->size = digits.size();
+    }
+    
+    BigInt addition(const BigInt &b); //unfinished
+
+    //Multiplication, Division and Modulus
+    
+    void multiplication(BigInt &b, BigInt &c){
+        // vector<BigInt> pows;
+        // BigInt result;
+        // BigInt mult;
+        // mult.digits = {0,0};
+        // unsigned int carry = 0;
+        // int j=0;
+        // for(int i=0; i<b.size; i++){
+        //     for(j=0; j<size; j++){ //36
+        //         //mult.digits = {}; // 4
+        //         //it += (i+j);
+        //         mult.size = 2 + i + j; 
+        //         carry = b.digits[i] * digits[j]; //9
+        //         mult.digits[0] = carry & max_mask; //50
+        //         mult.digits[1] = carry >> max_pow;
+        //         //  //60
+        //         auto it = mult.digits.end();
+        //         mult.digits.insert(it,0,i+j);
+        //         result.addition(mult); //200
+        //     }
+        // }
+        // return result;
+        //c.digits = vector<unsigned int>(size+b.size+1,0);
+        //fill(c.digits.begin(),c.digits.end(),0);
+        c.digits.clear();
+        c.digits.resize(size+b.size+1,0);
+        unsigned int carry = 0;
+        unsigned int mult;
+        for(int i=0; i < size; i++){
+            for(int j=0; j < b.size; j++){
+                mult = c.digits[i+j] + digits[i] * b.digits[j] + carry;
+                c.digits[i+j] = mult && max_mask;
+                carry = mult >> max_pow;
+            }
+            if(carry){
+                mult = carry;
+                c.digits[i+b.size] = mult && max_mask;
+            }
+
+            carry = 0;
+        }
+        //while (c.digits.size() > 1 && c.digits.back() == 0){
+        //    c.digits.pop_back();
+        //}
+        c.flatten();
+        c.size = c.digits.size();
+    }   
+
+    void multiplication_self(BigInt &b){
+        // vector<BigInt> pows;
+        // BigInt result;
+        // BigInt mult;
+        // mult.digits = {0,0};
+        // unsigned int carry = 0;
+        // int j=0;
+        // for(int i=0; i<b.size; i++){
+        //     for(j=0; j<size; j++){ //36
+        //         //mult.digits = {}; // 4
+        //         //it += (i+j);
+        //         mult.size = 2 + i + j; 
+        //         carry = b.digits[i] * digits[j]; //9
+        //         mult.digits[0] = carry & max_mask; //50
+        //         mult.digits[1] = carry >> max_pow;
+        //         //  //60
+        //         auto it = mult.digits.end();
+        //         mult.digits.insert(it,0,i+j);
+        //         result.addition(mult); //200
+        //     }
+        // }
+        // return result;
+        //c.digits = vector<unsigned int>(size+b.size+1,0);
+        //fill(c.digits.begin(),c.digits.end(),0);
+        if(this->size == 1){
+            if(this->digits[0] == 0){
+                return;
+            }
+        }
+        BigInt c;
+        c.digits.clear();
+        c.digits.resize(size+b.size+1,0);
+        unsigned int carry = 0;
+        unsigned int mult;
+        for(int i=0; i < this->size; i++){
+            for(int j=0; j < b.size; j++){
+                mult = c.digits[i+j] + this->digits[i] * b.digits[j] + carry;
+                c.digits[i+j] = (mult & max_mask);
+                carry = mult >> max_pow;
+            }
+            if(carry){
+                mult = carry;
+                c.digits[i+b.size] = (mult & max_mask);
+            }
+
+            carry = 0;
+        }
+        //while (c.digits.size() > 1 && c.digits.back() == 0){
+        //    c.digits.pop_back();
+        //}
+        c.flatten();
+        c.size = c.digits.size();
+        *this = c;
+    }   
+    
+    void modulus_self(const BigInt &b){
+        BigInt divisor = b;
+        if(divisor.greater_than(*this)){
+            return;
+        }
+        //BigInt result = *this;   13620 45525
+        int max_bit_divisor = divisor.max_bit();
+        int max_bit = this->max_bit();
+
+        divisor.shift_left_self(max_bit - max_bit_divisor);
+        max_bit_divisor = max_bit;
+        //BigInt temp;
+        //while(this->greater_than(b)){
+        while(true){
+            //temp = *this;
+            //temp.subtraction_self_unsigned(divisor);
+            if(divisor.greater_than(*this)){
+                max_bit_divisor -= 1;
+                divisor.shift_right_self(1);
+            }else{
+                this->subtraction_self_unsigned(divisor);
+                if(!this->greater_than(b)){
+                    break;
+                }
+                max_bit = this->max_bit();
+                divisor.shift_right_self(max_bit_divisor - max_bit);
+                max_bit_divisor = max_bit;
+            }
+        }
+    }
+
+
+    unsigned int modulus(const int &b){
+        vector<unsigned int> _digits = this->digits;
+        if(this->size == 0){
+            return 0;
+        }
+        _digits[this->size -1] = _digits[this->size - 1] % b;
+        int max_int_modulo = max_int % b;
+        for(int i = this->size - 2; i >= 0; i--){
+            _digits[i] = ((_digits[i] % b) + ((_digits[i+1] * max_int_modulo) % b)) % b;
+        }
+
+        return _digits[0];
+    }
+
+    BigInt modulus(const BigInt &b){
+        BigInt divisor = b;
         BigInt result = *this;
-        while(result > b){
-            //result.print();
-            temp = b;
-            if(max_bit - b_max_bit > 0){
-                temp = (temp << (max_bit - b_max_bit - 1));
+        int max_bit_divisor = divisor.max_bit();
+        int max_bit = this->max_bit();
+
+        divisor.shift_right_self(max_bit - max_bit_divisor);
+        max_bit_divisor = max_bit;
+        BigInt temp;
+        while(result.greater_than(b)){
+            temp = result;
+            temp.subtraction_self_unsigned(divisor);
+            if(temp.negative){
+                max_bit_divisor -= 1;
+                divisor.shift_right_self(1);
+            }else{
+                result = temp;
+                max_bit = this->max_bit();
+                divisor.shift_left_self(max_bit_divisor - max_bit);
+                max_bit_divisor = max_bit;
             }
-            //temp = (b << (max_bit - b_max_bit));
-            //temp.print();
-            while(result > temp){
-                result -= temp;
-                //result.print();
-            }
-            max_bit = result.max_bit();
         }
         return result;
     }
-    BigInt modulo_pow(BigInt e, BigInt m){
-        // cout << "hell0" << endl;
-        // BigInt prev;
-        // int max = b.max_bit();
-        // BigInt result;
-        // result.num_vec = {1};
-        // int size = b.num_vec.size();
-        // cout << "hell0" << endl;
-        // //auto start = chrono::steady_clock::now();
-        // for(int i=0; i<=max; i++){
-        //     cout << "i mod " << i << endl;
-        //     if(i == 0){
-        //         prev = *this % c;
-        //     }else{
-        //         prev = (prev*prev);
-        //         prev = prev % c;
-        //     }
-        //     if(b.num_vec[size-1-(int)(i/max_pow)]){
-        //         result = result * prev;
-        //     }
-        // }
-        // //auto end = chrono::steady_clock::now();
-        // // cout << "Forloop Time : "
-        // //     << chrono::duration_cast<chrono::nanoseconds>(end-start).count()
-        // //     <<" ns" <<endl;
+    
+    BigInt modulo_pow(BigInt e, const BigInt &m){
 
-        // result = result % c;
-        // result.flatten();
-        
-        // return result;
         BigInt result({1});
         BigInt b = *this;
-        b = b % m;
+
+        if(b.digits.size() == 1){
+            if(b.digits[0] == 0){
+                return b;
+            }
+        }
+        b.modulus_self(m);
+
         BigInt zero({0});
         while(e > zero){
             //if(e.num_vec[e.num_vec.size()-1]%2 == 1){
-            if(e.num_vec[e.num_vec.size()-1]&1){    
-                result = (result * b) % m;
+            //if(e.digits[e.digits.size()-1]&1){    
+            if(e.digits[0]&1){    
+                //result = (result * b) % m;
+                result.multiplication_self(b);
+                result.modulus_self(m);
             }
-            e = e >> 1;
-            b = (b * b) % m;
+            //e = e >> 1;
+            e.shift_right_self(1);
+            b.multiplication_self(b);
+            //b.print();
+            //m.print();
+            b.modulus_self(m);
+            //b = (b * b) % m;
         }
         return result;
     }
-    bool prime(int k = 6){
-        auto start = chrono::steady_clock::now();
+
+    //Prime Number functions
+
+    bool is_prime(int k){
         BigInt n = *this;
-        this->flatten();
-        if(this->num_vec.size() == 1){
-            if(this->num_vec[0] == 1){
+        //cout << n.size << endl;
+        if(this->size == 0){
+            return false;
+        }
+        if(this->size == 1){
+            if(this->digits[0] == 1){
                 return false;
-            }            
+            } 
+            if(this->digits[0] == 0){
+                return false;
+            }           
+        }
+        if(this->modulus(3) == 0){
+                return false;
+        } 
+        if(this->modulus(5) == 0){
+                return false;
         }
         BigInt _n;
         _n = n;
-        _n -= 1;
+        _n.subtraction_self_unsigned(1);
         BigInt s;
         BigInt r;
         r = n;
-        //cout << "running";
-        r -= 1;
-        //auto start = chrono::steady_clock::now();
-        while(r.even()){
-            s += 1;
-            r = r >> 1;
+        r.subtraction_self_unsigned(1);
+        int test = 15 & 1;
+        //bool test = r.digits[0]&1;
+        while(!(r.digits[0]&1)){
+            s.addition_self_unsigned(1);
+            r.shift_right_self(1);
             //r.print();
         }
-        // auto end = chrono::steady_clock::now();
-        // cout << "Elapsed Time : "
-        //     << chrono::duration_cast<chrono::nanoseconds>(end-start).count()
-        //     <<" ns" <<endl;
-
         for(int i=0; i < k; i++){
             //cout << "i " << i <<  endl;
             //auto start = chrono::steady_clock::now();
             BigInt a;
-            a.rand(_n,start);
+            a.random(_n);
             //auto end = chrono::steady_clock::now();
             BigInt x;
+            //a.print();
             x = a.modulo_pow(r,n);
-            if(!(x == 1) && !(x == _n)){
+            //cout << "In Prime" << endl;
+            if((!(x.equal(1))) && (!(x.equal(_n)))){
                 BigInt j;
-                j += 1;
-                while((j < s) && !(x == _n)){
-                    x = x * x;
-                    x = x % n;
-                    if(x == 1){
+                j.addition_self_unsigned(1);
+                while((j.less_than(s)) && !(x.equal(_n))){
+                    x.multiplication_self(x);
+                    x.modulus_self(n);
+                    if(x.equal(1)){
+                        //cout << "Leaving" << endl;
                         return false;
                     } 
-                    j += 1;
+                    j.addition_self_unsigned(1);
                 }
-                if(!(x==_n)){
+                if(!(x.equal(_n))){
+                    //cout << "Leaving" << endl;
                     return false;
                 }
             }
         }
+        //cout << "Leaving" << endl;
         return true;
     }
+
+    //Printing
+
+    void print() const{
+        BigInt temp = *this;
+        string result = "";
+        cout << "Size: " << size << endl;
+        for(int i = size - 1; i > 0; i--){
+            cout << digits[i] << " ";
+        }
+        cout << digits[0];
+        cout << result;
+        cout << endl;
+    }
+   
+    //Constructors
+
+    BigInt(){
+        size = 1;
+        digits.push_back(0);
+    }
+    
+    BigInt (vector<unsigned int> _digits){
+        for(int i = _digits.size() - 1; i >= 0; i--){
+            digits.push_back(_digits[i]);
+        }
+        //this->digits = _digits;
+        this-> negative = false;
+        this->flatten();
+    }
+
+    BigInt (vector<unsigned int> _digits, bool _negative){
+        //digits = _digits;
+        for(int i = _digits.size() - 1; i >= 0; i--){
+            digits.push_back(_digits[i]);
+        }
+        this->flatten();
+        negative = _negative;
+    }
+
+    //Operators
+
+    bool operator >(const BigInt &b){
+        // if(b.size != size){
+        //     return b.size > size;
+        // }
+        // for(int i = size - 1; i >= 0; i--){
+        //     if(digits[i] != b.digits[i]){
+        //         return digits[i] > b.digits[i];
+        //     }
+        // }
+        // return false;
+        return this->greater_than(b);
+    }
+    
+    void operator +=(BigInt &b){
+        if(b.negative){
+            if(negative){
+                this->addition_self_unsigned(b);
+            }else{
+                if(greater_than(b)){
+                    BigInt c;
+                    c = b;
+                    c.subtraction_self_unsigned(*this);
+                    *this = c;
+                    negative = true;
+                }else{
+                    this->subtraction_self_unsigned(b);
+                }
+            }
+        }else{
+            if(negative){
+                if(greater_than(b)){
+                    BigInt c;
+                    c = b;
+                    c.subtraction_self_unsigned(*this);
+                    *this = c;
+                    negative = false;
+                }
+            }else{
+                    this->addition_self_unsigned(b);
+            }
+        }
+    }
+
 };
