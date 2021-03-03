@@ -1,67 +1,28 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+//#include "bigint.hpp"
 #include "bigint.hpp"
-using namespace std;
 #include <chrono>
-
-bool isPrime(BigInt n, int k = 30){
-    // BigInt _n;
-    // _n = n;
-    // _n -= 1;
-    // BigInt s;
-    // BigInt r;
-    // r = n;
-    // cout << "running";
-    // r -= 1;
-    // auto start = chrono::steady_clock::now();
-    // while(r.even()){
-    //     s += 1;
-    //     r >> 1;
-    // }
-    // auto end = chrono::steady_clock::now();
-    // cout << "Elapsed Time : "
-    //     << chrono::duration_cast<chrono::nanoseconds>(end-start).count()
-    //     <<" ns" <<endl;
-
-    // for(int i=0; i < k; i++){
-    //     cout << "i " << i <<  endl;
-    //     //auto start = chrono::steady_clock::now();
-    //     BigInt a;
-    //     a.rand(_n);
-    //     auto end = chrono::steady_clock::now();
-    //     BigInt x;
-    //     x = a.modulo_pow(r,n);
-    //     if(!(x == 1) && !(x == _n)){
-    //         BigInt j;
-    //         j += 1;
-    //         while((j < s) && !(x == _n)){
-    //             x = x * x;
-    //             x = x % n;
-    //             if(x == 1){
-    //                 return false;
-    //             } 
-    //             j += 1;
-    //         }
-    //         if(!(x==_n)){
-    //             return false;
-    //         }
-    //     }
-    // }
-    return true;
-}
+using namespace std;
 
 int main(){
-    cout << "hello";
-    BigInt a;
-    a.rand(37);
-    int guess = 0;
-    while(!isPrime(a)){
-        cout << "Guess: " << guess << endl;
-        a.print();
-        a.rand(37);
-    }
-    cout <<"Prime"<<endl;
-    a.print();
 
-}
+    BigInt a;
+    a.random(1000);
+    a.print();
+    cout << a.toString();
+    int count = 1;
+    while(!a.is_prime(10)){
+        a.random(1000);
+        if(a.even()){
+            a.addition_self_unsigned(1);
+        }
+        cout << a.toString() << endl;
+        count++;
+        cout << "count " << count << endl; 
+    }
+    cout << "count " << count;
+
+}//326315851429
+//3963671696971241929295694384568056196994712893237947606755647028577828121899124175986131700842687892587698069367023470202953829203866952510165779336888168188639623439814940799535142252572709413605146844235765056229809382198164115720461348409139260381544685505681100896203471460903742930421906539148899

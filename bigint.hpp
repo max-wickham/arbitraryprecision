@@ -31,8 +31,6 @@ const unsigned int right_left_left_left = 128;
 const unsigned int right_left_right_left = 32;
 const unsigned int right_right_left_left = 8;
 const unsigned int right_right_right_left = 2;
- 
-//const int base = pow(2,max_pow);
 
 class BigInt{
 
@@ -48,6 +46,8 @@ class BigInt{
         }
     }
 
+    public: 
+
     int max_bit (){
         this->flatten();
 
@@ -57,17 +57,14 @@ class BigInt{
 
         unsigned int num = this->digits[this->size-1];
         int result =  (this->size - 1) * max_pow;
-        // while((num & max_mask)){
-        //     result++;
-        //     num >>= 1;
-        // }
-        // return result;
+
         if(num & 65280u){
             if(num & left_left){
                 if(num & left_left_left){
-                    return ((num & left_left_left_left)?16:15 + result);      
+                    int x = (((num & left_left_left_left)?16:15) + result);
+                    return x;      
                 }else{
-                    return ((num & left_left_right_left)?14:13 + result);
+                    return ((num & left_left_right_left)?14:13) + result;
                 }
             }else{
                 if(num & left_right_left){
@@ -94,8 +91,9 @@ class BigInt{
 
     }
 
-    public: 
-    
+    bool even (){
+        return !(this->digits[0] & 1);
+    }
     //Random number generation
 
     void random(int bits){
@@ -133,7 +131,7 @@ class BigInt{
     void  bitwise_not_self(); //unfinished
     
     //Comparators
-
+    
     bool equal (const BigInt &b){
         if(this->size != b.size){
             return false;
@@ -153,7 +151,7 @@ class BigInt{
         return this->digits[0] == b;
     }
 
-    bool greater_than(const BigInt &b){
+    bool greater_than(const BigInt &b) const{
         if(b.size != this->size){
             bool x = (b.size < this->size);
             return (b.size < this->size);
@@ -164,6 +162,13 @@ class BigInt{
             }
         }
         return false;
+    }
+
+    bool greater_than(const int &b){
+        if(this->size > 1){
+            return true;
+        }
+        return digits[0] > b;
     }
     
     bool greater_than_equal (const BigInt &b); //unfinished
@@ -200,6 +205,7 @@ class BigInt{
 
         while(x >= max_pow){
             this->digits.erase(this->digits.begin());
+            this->size-=1;
             x -= max_pow;
         }
         int mask = (1 << (x)) - 1;
@@ -315,12 +321,12 @@ class BigInt{
         digitandcarry = digits[0] - carry;
         bool temp = (digitandcarry) < b;
         digits[0] = ((1 << max_pow) + digitandcarry - b) & max_mask;
-        carry >>= temp;
+        carry = temp;
         
         for(; i < this->size; i++){
-            carry += digits[i];
+            //carry += digits[i];
             digitandcarry = digits[i] - carry;
-            bool temp = (digitandcarry) >= 0;
+            bool temp = (digitandcarry) < 0;
             digits[i] = ((1 << max_pow) + digitandcarry) & max_mask;
             carry = temp;
             if(!carry){break;}
@@ -402,29 +408,6 @@ class BigInt{
     //Multiplication, Division and Modulus
     
     void multiplication(BigInt &b, BigInt &c){
-        // vector<BigInt> pows;
-        // BigInt result;
-        // BigInt mult;
-        // mult.digits = {0,0};
-        // unsigned int carry = 0;
-        // int j=0;
-        // for(int i=0; i<b.size; i++){
-        //     for(j=0; j<size; j++){ //36
-        //         //mult.digits = {}; // 4
-        //         //it += (i+j);
-        //         mult.size = 2 + i + j; 
-        //         carry = b.digits[i] * digits[j]; //9
-        //         mult.digits[0] = carry & max_mask; //50
-        //         mult.digits[1] = carry >> max_pow;
-        //         //  //60
-        //         auto it = mult.digits.end();
-        //         mult.digits.insert(it,0,i+j);
-        //         result.addition(mult); //200
-        //     }
-        // }
-        // return result;
-        //c.digits = vector<unsigned int>(size+b.size+1,0);
-        //fill(c.digits.begin(),c.digits.end(),0);
         c.digits.clear();
         c.digits.resize(size+b.size+1,0);
         unsigned int carry = 0;
@@ -449,30 +432,7 @@ class BigInt{
         c.size = c.digits.size();
     }   
 
-    void multiplication_self(BigInt &b){
-        // vector<BigInt> pows;
-        // BigInt result;
-        // BigInt mult;
-        // mult.digits = {0,0};
-        // unsigned int carry = 0;
-        // int j=0;
-        // for(int i=0; i<b.size; i++){
-        //     for(j=0; j<size; j++){ //36
-        //         //mult.digits = {}; // 4
-        //         //it += (i+j);
-        //         mult.size = 2 + i + j; 
-        //         carry = b.digits[i] * digits[j]; //9
-        //         mult.digits[0] = carry & max_mask; //50
-        //         mult.digits[1] = carry >> max_pow;
-        //         //  //60
-        //         auto it = mult.digits.end();
-        //         mult.digits.insert(it,0,i+j);
-        //         result.addition(mult); //200
-        //     }
-        // }
-        // return result;
-        //c.digits = vector<unsigned int>(size+b.size+1,0);
-        //fill(c.digits.begin(),c.digits.end(),0);
+    void multiplication_self(const BigInt &b){
         if(this->size == 1){
             if(this->digits[0] == 0){
                 return;
@@ -504,6 +464,28 @@ class BigInt{
         *this = c;
     }   
     
+    void division_self(const int &b){
+        
+        if(this->size == 0){
+            return;
+        }
+        unsigned int carry = this->digits[this->size - 1] % b;
+        this->digits[this->size -1] = this->digits[this->size - 1] / b;
+        int max_int_modulo = max_int % b;
+        for(int i = this->size - 2; i >= 0; i--){
+            this->digits[i] += (carry << 16);
+            carry = this->digits[i] % b;
+            this->digits[i] = this->digits[i] / b;
+            //_digits[i] = ((_digits[i] % b) + ((_digits[i+1] * max_int_modulo) % b)) % b;
+        }
+        this->flatten();
+    }
+
+    void division_self(const BigInt &b){
+        
+    
+    }
+
     void modulus_self(const BigInt &b){
         BigInt divisor = b;
         if(divisor.greater_than(*this)){
@@ -534,7 +516,6 @@ class BigInt{
             }
         }
     }
-
 
     unsigned int modulus(const int &b){
         vector<unsigned int> _digits = this->digits;
@@ -576,38 +557,27 @@ class BigInt{
     }
     
     BigInt modulo_pow(BigInt e, const BigInt &m){
-
         BigInt result({1});
         BigInt b = *this;
-
-        if(b.digits.size() == 1){
-            if(b.digits[0] == 0){
-                return b;
-            }
+        if(b.equal(0)){
+            return b;
         }
         b.modulus_self(m);
 
         BigInt zero({0});
         while(e > zero){
-            //if(e.num_vec[e.num_vec.size()-1]%2 == 1){
-            //if(e.digits[e.digits.size()-1]&1){    
             if(e.digits[0]&1){    
-                //result = (result * b) % m;
                 result.multiplication_self(b);
                 result.modulus_self(m);
             }
-            //e = e >> 1;
             e.shift_right_self(1);
             b.multiplication_self(b);
-            //b.print();
-            //m.print();
             b.modulus_self(m);
-            //b = (b * b) % m;
         }
         return result;
     }
 
-    //Prime Number functions
+    //Encryption functions
 
     bool is_prime(int k){
         BigInt n = *this;
@@ -675,6 +645,70 @@ class BigInt{
         return true;
     }
 
+    BigInt gcd(BigInt const &b) const{
+        BigInt result;
+        bool bigger = this->greater_than(b);
+        BigInt biggest = (bigger ? *this:b);
+        BigInt smallest = (!bigger ? *this:b);
+        while(true){
+            BigInt remainder = biggest.modulus(smallest);
+            if (remainder == 0){
+                result = smallest;
+                break;
+            }
+            biggest = smallest;
+            smallest = remainder;
+        }
+        return result;
+    }
+
+    void totient(BigInt &PrimeP, BigInt &PrimeQ){
+        //find lowest common factor of p-1 and q-1
+        BigInt gcd = PrimeP.gcd(PrimeQ);
+        BigInt result;
+        result.multiplication(PrimeP,PrimeQ);
+        result.division_self(gcd);
+        *this = result;
+    }
+
+    BigInt moduler_multiplicative_inverse(BigInt m){
+        BigInt a = *this;
+        BigInt result;
+        //result * this == 1 mod(m)
+        BigInt m0 = m;
+        BigInt y({0});
+        BigInt x({1});
+ 
+        if (m == 1){
+            BigInt zero({0});
+            return zero;
+        }
+ 
+        while (a.greater_than(1)) {
+            // q is quotient
+            BigInt q = a;
+            q.division_self(m);
+            BigInt t = m;
+    
+            // m is remainder now, process same as
+            // Euclid's algo
+            m = a.modulus(m);
+            a = t;
+            t = y;
+    
+            // Update y and x
+            y = x.subtraction(q.multiplication(y));
+            x = t;
+        }
+ 
+    // Make x positive
+    if (x.less_than(0))
+        x += m0;
+ 
+    return x;
+        return result;
+    }
+
     //Printing
 
     void print() const{
@@ -689,6 +723,18 @@ class BigInt{
         cout << endl;
     }
    
+    std::string toString() const{
+        vector<int> digits;
+        BigInt a = *this;
+        std::string result;
+        while(a.greater_than(0)){
+            std::string d = std::to_string(a.digits[0]);
+            result = d.at(d.size()-1) + result;
+            a.division_self(10);
+        }
+        return result;
+    }
+    
     //Constructors
 
     BigInt(){
@@ -706,7 +752,6 @@ class BigInt{
     }
 
     BigInt (vector<unsigned int> _digits, bool _negative){
-        //digits = _digits;
         for(int i = _digits.size() - 1; i >= 0; i--){
             digits.push_back(_digits[i]);
         }
@@ -714,18 +759,38 @@ class BigInt{
         negative = _negative;
     }
 
+    // BigInt (std::string in){
+    //     if(in.size() < 16){
+    //         int n = std::stoi(in,NULL,2);
+    //         this->digits.push_back(n);
+    //         this->flatten();
+    //         return;
+    //     }
+    //     while(in.size() >= 16){
+    //         int n = std::stoi(in.substr(in.size()-16,in.size()),NULL,2);
+    //         in = in.substr(0,in.size()-16);
+    //         this->digits.push_back(n);
+    //     }
+    //     if(in.size() != 0){
+    //         int n = std::stoi(in,NULL,2);
+    //         this->digits.push_back(n);
+    //     }
+    //     this->flatten();
+    // }
+
     //Operators
 
+        //Comparators
+    
+    bool operator == (const int &b){
+        return this->equal(b);
+    }
+
+    bool operator == (const BigInt &b){
+        return this->equal(b);
+    }
+
     bool operator >(const BigInt &b){
-        // if(b.size != size){
-        //     return b.size > size;
-        // }
-        // for(int i = size - 1; i >= 0; i--){
-        //     if(digits[i] != b.digits[i]){
-        //         return digits[i] > b.digits[i];
-        //     }
-        // }
-        // return false;
         return this->greater_than(b);
     }
     
@@ -759,4 +824,13 @@ class BigInt{
         }
     }
 
+        //Multiplication, Division and Modulus
+
+    void operator *= (const BigInt &b){
+        this->multiplication_self(b);
+    }
+
+    void operator %= (const BigInt &b){
+        this->modulus_self(b);
+    }
 };
