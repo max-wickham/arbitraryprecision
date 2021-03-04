@@ -6,7 +6,7 @@
 - The class also implements an algorithm for generating large prime numbers
 
 ## Testing BigInt
-- Tests can be run by running test.sh script in the test folder, the output can be found in the output folder
+- Tests can be run by running test.sh script in the test folder, the output can be found in the output folder. At the moment most test still need to be implemented. 
   
 ## Building Python Library
 - Running **"python3 setup.py build"** will build the python library, the .so file can be found in the build folder
@@ -16,3 +16,6 @@
 ## Python Functions
 - the encryption library contains the following funcitons
   - **generatePrime(n)**, return a prime int of bit length n or less
+
+## Encryption Functions
+  - The file encryption.cpp contains functions for both generating RSA encryptoin keys from prime numbers and a function for encryption and decryption. Once these functions are fully working they will be incorporated into the python library.
