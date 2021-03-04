@@ -718,127 +718,9 @@ class BigInt{
         return result;
     }
 
-    void totient(BigInt &PrimeP, BigInt &PrimeQ){
-        //find lowest common factor of p-1 and q-1
-        BigInt p = PrimeP;
-        BigInt q = PrimeQ;
-        p.subtraction_self_unsigned(1);
-        //p.print();
-        q.subtraction_self_unsigned(1);
-        //q.print();
-        BigInt gcd = p.gcd(q);
-        //gcd.print();
-        BigInt result;
-        q.multiplication(p,result);
-        result.division_self(gcd);
-        *this = result;
-    }
-
-    tuple<BigInt, BigInt, BigInt> extended_gcd(BigInt a, BigInt b)
-    {
-        if (a == 0) {
-            BigInt z({0});
-            BigInt o({1});
-            return make_tuple(b, z, o);
-        }
-    
-        BigInt gcd, x, y;
-    
-        // unpack tuple returned by function into variables
-        BigInt h = b.modulus(a);
-        tie(gcd, x, y) = extended_gcd(h, a);
-    
-        BigInt temp;
-        temp = x;
-
-        b.division_self(a);
-        b.multiplication_self(x);
-        y.subtraction_self(b);
-        x = y;
-        y = temp;
-        return make_tuple(gcd, x, y);
-    }
-
-    void ExtendEuclidian(BigInt a, BigInt b, BigInt &x, BigInt &y){
-        // def egcd(a, b):
-        //     if a == 0:
-        //         return b, 0, 1
-        //     else:
-        //         gcd, x, y = egcd(b % a, a)
-        //         return gcd, y - (b // a) * x, x
-        if(a == 0){
-            BigInt z({0});
-            BigInt o({1});
-            x = z;
-            y = o;
-        }
-        else{
-            BigInt h = b.modulus(a);
-            this->ExtendEuclidian(h,a,x,y);
-            // y - (b // a) * x, x
-            BigInt temp;
-            temp = x;
-
-            b.division_self(a);
-            b.multiplication_self(x);
-            y.subtraction_self(b);
-            x = y;
-            y = temp;
-        }
-
-
-
-        // BigInt oldr = a;
-        // BigInt r = b;
-        // BigInt olds({1});
-        // BigInt s({0});
-        // BigInt oldt({0}); 
-        // BigInt t({1});
-        // BigInt quotient;
-        // BigInt temp;
-        // BigInt temp2;
-        // while(!r.equal(0)){
-        //     quotient = oldr;
-        //     quotient.division_self(r);
-        //     temp2 = r;
-        //     quotient.multiplication(r,temp);
-        //     r = oldr;
-        //     r.subtraction_self(temp);
-        //     oldr = temp2;
-        //     temp2 = s;
-        //     quotient.multiplication(s,temp);
-        //     s = olds; s.subtraction_self(temp);
-        //     olds = temp2;
-        //     temp2 = t;
-        //     quotient.multiplication(t,temp);
-        //     t = oldt; t.subtraction_self(temp);
-        //     oldt = temp2;
-        // }
-        // x = oldt;
-        // y = olds;
-    }
-
     BigInt moduler_multiplicative_inverse(BigInt m){
-        // BigInt result;
-        // BigInt x;
-        // BigInt y;
-        // tuple<BigInt,BigInt,BigInt> egcd = extended_gcd(*this,m);
-        // //result.ExtendEuclidian(*this,m,x,y);
-        // x = get<1>(egcd);
-        // y =  get<2>(egcd);
-        // cout << "X" <<endl;
-        // x.print();
-        // cout << "Y" << endl;
-        // y.print();
-        // x.modulus_self(m);
-        // x += m;
-        // x.modulus_self(m);
-        // result = x;
-        // return result;
 
         BigInt a = *this;
-        //BigInt result;
-        //result * this == 1 mod(m)
         BigInt m0 = m;
         BigInt y({0});
         BigInt x({1});
@@ -859,40 +741,23 @@ class BigInt{
             m = a.modulus(m);
             a = t;
             t = y;
-            cout << "M" << endl;
-            m.print();
-            cout << "A" << endl;
-            a.print();
-            cout << "T" << endl;
-            t.print();
     
             // Update y and x
             //y = x - q * y;
             //x = t;
-            cout << "Y" << endl;
-            y.print();
-            cout << "Q" << endl;
-            q.print();
+
             BigInt temp;
             y.multiplication(q,temp);
-            cout << "TEMP" << endl;
-            temp.print();
             y = x;
             y.subtraction_self(temp);
             x = t;
-            cout << "X" << endl;
-            x.print();
-            cout << "Y" << endl;
-            y.print();
         }
-        x.print();
         // Make x positive
         if (x.negative){
             x += m0;
         }
     
         return x;
-        //return result;
     }
 
     //Printing

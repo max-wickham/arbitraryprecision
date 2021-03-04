@@ -47,12 +47,12 @@ int main(){
     //cout << a.toString() <<endl;
     //cout << b.toString() <<endl;
     Keys key = generateKey(a,b);
-    key.privateKey.print();
-    key.publicKey.print();
-    key.n.print();
-    BigInt message({134,123});
+    //key.privateKey.print();
+    //key.publicKey.print();
+    //key.n.print();
+    BigInt message({134,123,987});
     BigInt encrypted_message = encrypt(message,key.privateKey,key.n);
-    encrypted_message.print();
+    //encrypted_message.print();
     BigInt decrypted_meddage = encrypt(encrypted_message,key.publicKey,key.n);
     decrypted_meddage.print();
 

@@ -18,4 +18,4 @@
   - **generatePrime(n)**, return a prime int of bit length n or less
 
 ## Encryption Functions
-  - The file encryption.cpp contains functions for both generating RSA encryptoin keys from prime numbers and a function for encryption and decryption. Once these functions are fully working they will be incorporated into the python library.
+  - The file encryption.cpp contains functions for both generating RSA encryptoin keys from prime numbers and a function for encryption and decryption. These functions are working in C++ but haven't been connected to the python library yet. 
