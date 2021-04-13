@@ -17,23 +17,41 @@ const unsigned int one = 1;
 const int max_pow = 16;
 const unsigned int max_int = (one << max_pow);
 const unsigned int max_mask = (one << max_pow) - 1;
+const unsigned int search_bits = max_pow >> 1;
+const unsigned int left_search = (max_mask >> search_bits) << search_bits;
 
 //max bit constants
-const unsigned int left = 65280;
-const unsigned int left_right_left = 3072;
-const unsigned int left_right_left_left = 2048;
-const unsigned int left_right_right_left = 512;
-const unsigned int left_left = 61440;
-const unsigned int left_left_left = 49152;
-const unsigned int left_left_left_left = 32768;
-const unsigned int left_left_right_left = 8192;
-const unsigned int right_left = 240;
-const unsigned int right_left_left = 192;
-const unsigned int right_right_left = 12;
-const unsigned int right_left_left_left = 128;
-const unsigned int right_left_right_left = 32;
-const unsigned int right_right_left_left = 8;
-const unsigned int right_right_right_left = 2;
+// const unsigned int left = 65280;
+// const unsigned int left_right_left = 3072;
+// const unsigned int left_right_left_left = 2048;
+// const unsigned int left_right_right_left = 512;
+// const unsigned int left_left = 61440;
+// const unsigned int left_left_left = 49152;
+// const unsigned int left_left_left_left = 32768;
+// const unsigned int left_left_right_left = 8192;
+// const unsigned int right_left = 240;
+// const unsigned int right_left_left = 192;
+// const unsigned int right_right_left = 12;
+// const unsigned int right_left_left_left = 128;
+// const unsigned int right_left_right_left = 32;
+// const unsigned int right_right_left_left = 8;
+// const unsigned int right_right_right_left = 2;
+
+// #define left 65280
+// #define left_right_left 3072
+// #define left_right_left_left 2048
+// #define left_right_right_left 512
+// #define left_left 61440
+// #define left_left_left 49152
+// #define left_left_left_left 32768
+// #define left_left_right_left 8192
+// #define right_left 240
+// #define right_left_left 192
+// #define right_right_left 12
+// #define right_left_left_left 128
+// #define right_left_right_left 32
+// #define right_right_left_left 8
+// #define right_right_right_left 2
 
 class BigInt{
 
@@ -61,42 +79,56 @@ class BigInt{
         unsigned int num = this->digits[this->size-1];
         int result =  (this->size - 1) * max_pow;
 
-        if(num & 65280u){
-            if(num & left_left){
-                if(num & left_left_left){
-                    int x = (((num & left_left_left_left)?16:15) + result);
-                    return x;      
-                }else{
-                    return ((num & left_left_right_left)?14:13) + result;
-                }
-            }else{
-                if(num & left_right_left){
-                    return ((num & left_right_left_left)?12:11) + result;      
-                }else{
-                    return ((num & left_right_right_left)?10:9) + result;
-                }
+        // if(num & 65280u){
+        //     if(num & left_left){
+        //         if(num & left_left_left){
+        //             int x = (((num & left_left_left_left)?16:15) + result);
+        //             return x;      
+        //         }else{
+        //             return ((num & left_left_right_left)?14:13) + result;
+        //         }
+        //     }else{
+        //         if(num & left_right_left){
+        //             return ((num & left_right_left_left)?12:11) + result;      
+        //         }else{
+        //             return ((num & left_right_right_left)?10:9) + result;
+        //         }
+        //     }
+        // }else{
+        //     if(num & right_left){
+        //         if(num & right_left_left){
+        //             return ((num & right_left_left_left)?8:7) + result;      
+        //         }else{
+        //             return ((num & right_left_right_left)?6:5) + result;
+        //         }
+        //     }else{
+        //         if(num & right_right_left){
+        //             return ((num & right_right_left_left)?4:3) + result;      
+        //         }else{
+        //             return ((num & right_right_right_left)?2:1) + result;
+        //         }
+        //     }
+        // }
+        
+        int bits = search_bits;
+        int leftSearch = left_search;
+        while(bits){
+            if(num & leftSearch){
+                result += bits;
+                num >>= bits;
             }
-        }else{
-            if(num & right_left){
-                if(num & right_left_left){
-                    return ((num & right_left_left_left)?8:7) + result;      
-                }else{
-                    return ((num & right_left_right_left)?6:5) + result;
-                }
-            }else{
-                if(num & right_right_left){
-                    return ((num & right_right_left_left)?4:3) + result;      
-                }else{
-                    return ((num & right_right_right_left)?2:1) + result;
-                }
-            }
+            leftSearch >>= (bits+(bits>>1));
+            leftSearch <<= (bits>>1);
+            bits >>= 1;
         }
-
+        result += num & 1;
+        return result;
     }
 
     bool even (){
         return !(this->digits[0] & 1);
     }
+    
     //Random number generation
 
     void random(int bits){
@@ -379,7 +411,6 @@ class BigInt{
         }
 
         this->flatten();
-        size = digits.size();
     }
     
     void addition_self_unsigned(const int &b){
@@ -403,7 +434,6 @@ class BigInt{
             this->size++;
         }
         this->flatten();
-        this->size = digits.size();
     }
     
     BigInt addition(const BigInt &b); //unfinished
@@ -425,7 +455,6 @@ class BigInt{
                 mult = carry;
                 c.digits[i+b.size] = mult & max_mask;
             }
-
             carry = 0;
         }
         //while (c.digits.size() > 1 && c.digits.back() == 0){
@@ -518,7 +547,7 @@ class BigInt{
                 divisor.shift_right_self(1);
             }else{
                 this->subtraction_self_unsigned(divisor);
-                //needs to be improved alot
+                //TODO needs to be improved a lot
                 shift = max_bit_divisor - o_max_bit_diviser;
                 BigInt adder({1});
                 adder.shift_left_self(shift);
@@ -736,15 +765,10 @@ class BigInt{
             q.division_self(m);
             BigInt t = m;
     
-            // m is remainder now, process same as
-            // Euclid's algo
+            // m is remainder now, process same as Euclid's algorithm
             m = a.modulus(m);
             a = t;
             t = y;
-    
-            // Update y and x
-            //y = x - q * y;
-            //x = t;
 
             BigInt temp;
             y.multiplication(q,temp);

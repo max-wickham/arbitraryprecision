@@ -36,14 +36,23 @@ Keys generateKey(BigInt primeP, BigInt primeQ){
     BigInt ctf;
     ctf = totient(primeP,primeQ);//shoudl be lcm of primeP-1 and primeQ-1#####
     //choose a number e less than ctf that is coprime to it
+    cout << "Found totient" << endl;
     int bits = ctf.max_bit();
+    cout << bits << endl;
     BigInt e;
     e.random(bits-10);
+    int count = 0;
     while((!e.is_prime(6)) & (!(ctf.modulus(e) == 0))){
+        count ++;
         e.random(bits);
+        if(e.even()){
+            e.addition_self_unsigned(1);
+        }
+        cout << "count " << count << endl;
     }//e should be coprime to ctf ########
     //find the modular multiplicative inverse of e, d
     BigInt d = e.moduler_multiplicative_inverse(ctf);//check valid d#####
+    cout << "Found inverse" << endl;
     //e is the public key. d is the private key
     keys.privateKey = e;
     keys.publicKey = d;
@@ -51,7 +60,7 @@ Keys generateKey(BigInt primeP, BigInt primeQ){
     return keys; 
 }
 
-BigInt encrypt(BigInt message, BigInt key, BigInt n){
+BigInt encrypt(BigInt &message, BigInt &key, BigInt &n){
     BigInt result = message;
     result = result.modulo_pow(key,n);
     return result;
