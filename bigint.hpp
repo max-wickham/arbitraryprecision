@@ -14,7 +14,8 @@
 using namespace std;
 
 const unsigned int one = 1;
-const int max_pow = 16;
+//const int max_pow = 16;
+const int max_pow = 32;
 const unsigned int max_int = (one << max_pow);
 const unsigned int max_mask = (one << max_pow) - 1;
 const unsigned int search_bits = max_pow >> 1;
@@ -237,7 +238,9 @@ class BigInt{
     void shift_right_self(int x){
         // this->flatten(); //shouldnt be needed
         // int size = this->digits.size();
-
+        if (x==0){
+            return;
+        }
         while(x >= max_pow){
             this->digits.erase(this->digits.begin());
             this->size-=1;
@@ -254,6 +257,9 @@ class BigInt{
     }
 
     void shift_left_self(int x){
+        if (x==0){
+            return;
+        }
         this->flatten();
 
         this->digits.push_back(0);
@@ -274,6 +280,10 @@ class BigInt{
             //zeros.insert(zeros.end(), this->digits.begin(), this->digits.end()); 
             this->digits = zeros;
         }
+        if (x==0){
+            this->flatten();
+            return;
+        }
         int mask = max_mask - ((1 << (max_pow - x)) - 1);
         for(int i = this->size - 1; i >  0; i--){
              this->digits[i] =  ((this->digits[i] << x) & max_mask)  +  ((this->digits[i-1] & mask) >>  (max_pow - x));
@@ -290,21 +300,21 @@ class BigInt{
     //Addition and Subtraction
 
     void subtraction_self_unsigned(const BigInt &b){
-        int carry = 0;
+        long int carry = 0;
         int i;
-        int digitandcarry;
+        long int digitandcarry;
         for(i = 0; i < b.size; i++){
-            digitandcarry = digits[i] - carry;
-            bool temp = ((digitandcarry) < (int)b.digits[i]);
-            digits[i] = (((1 << max_pow) + digits[i] - carry - b.digits[i]) & max_mask);
+            digitandcarry = ((long int) digits[i]) - carry;
+            bool temp = ((digitandcarry) < (long int)b.digits[i]);
+            digits[i] = (((long int) ((1 << max_pow) + digits[i] - carry - b.digits[i])) & ((long int) max_mask));
             carry = temp;
         }
         for(; i < this->size; i++){
             //carry += digits[i];
             if(!carry){break;}
-            digitandcarry = digits[i] - carry;
+            digitandcarry = ((long int) digits[i]) - carry;
             bool temp = (digitandcarry) < 0;
-            digits[i] = ((1 << max_pow) + digitandcarry) & max_mask;
+            digits[i] = (((long int) (1 << max_pow)) + ((long int) digitandcarry)) & ((long int) max_mask);
             carry = temp;
         }
 
@@ -374,16 +384,16 @@ class BigInt{
     BigInt subtraction(const BigInt &b); //unfinished
     
     void addition_self_unsigned(const BigInt &b){
-        unsigned int carry = 0;
+        unsigned long int carry = 0;
         int i;
         if(size >= b.size){
             for(i = 0; i < b.size; i++){
-                carry += digits[i] + b.digits[i];
+                carry += ((unsigned long int) digits[i]) + ((unsigned long int) b.digits[i]);
                 digits[i] = carry & max_mask;
                 carry >>= max_pow;
             }
             for(; i < size; i++){
-                carry += digits[i];
+                carry += ((unsigned long int) digits[i]);
                 digits[i] = carry & max_mask;
                 carry >>= max_pow;
                 if(!carry){break;}
@@ -394,12 +404,12 @@ class BigInt{
             }
         }else{
             for(i = 0; i < size; i++){
-                carry += digits[i] + b.digits[i];
+                carry += ((unsigned long int) digits[i]) + ((unsigned long int) b.digits[i]);
                 digits[i] = carry & max_mask;
                 carry >>= max_pow;
             }
             for(; i < b.size; i++){
-                carry += b.digits[i];
+                carry += ((unsigned long int) b.digits[i]);
                 digits.push_back(carry & max_mask);
                 carry >>= max_pow;
             }
@@ -418,13 +428,13 @@ class BigInt{
             this->size = 1;
             digits.push_back(0);
         }
-        unsigned int carry = 0;
-        carry += digits[0] + b;
+        unsigned long int carry = 0;
+        carry += ((unsigned long int) digits[0]) + ((unsigned long int) b);
         digits[0] = carry & max_mask;
         carry >>= max_pow;
         int i = 1;
         for(; i < this->size; i++){
-            carry += digits[i];
+            carry += ((unsigned long int) digits[i]);
             digits[i] = carry & max_mask;
             carry >>= max_pow;
             if(!carry){break;}
@@ -444,16 +454,16 @@ class BigInt{
         c.digits.clear();
         c.digits.resize(size+b.size+1,0);
         unsigned int carry = 0;
-        unsigned int mult;
+        unsigned long int mult;
         for(int i=0; i < size; i++){
             for(int j=0; j < b.size; j++){
-                mult = c.digits[i+j] + digits[i] * b.digits[j] + carry;
+                mult = c.digits[i+j] + ((unsigned long int) digits[i]) * ((unsigned long int) b.digits[j]) + carry;
                 c.digits[i+j] = mult & max_mask;
-                carry = mult >> max_pow;
+                carry = (mult >> max_pow) & max_mask;
             }
             if(carry){
                 mult = carry;
-                c.digits[i+b.size] = mult & max_mask;
+                c.digits[i+b.size] = carry & max_mask;
             }
             carry = 0;
         }
@@ -475,10 +485,10 @@ class BigInt{
         c.digits.clear();
         c.digits.resize(size+b.size+1,0);
         unsigned int carry = 0;
-        unsigned int mult;
+        unsigned long int mult;
         for(int i=0; i < this->size; i++){
             for(int j=0; j < b.size; j++){
-                mult = c.digits[i+j] + this->digits[i] * b.digits[j] + carry;
+                mult = c.digits[i+j] + ((unsigned long int) this->digits[i]) * ((unsigned long int) b.digits[j]) + carry;
                 c.digits[i+j] = (mult & max_mask);
                 carry = mult >> max_pow;
             }
@@ -500,23 +510,28 @@ class BigInt{
         }
     }   
     
-    void division_self(const int &b){
-        if(b<0){
-            this->negative = !this->negative;
-        }
-        if(this->size == 0){
-            return;
-        }
-        unsigned int carry = this->digits[this->size - 1] % b;
-        this->digits[this->size -1] = this->digits[this->size - 1] / b;
-        int max_int_modulo = max_int % b;
-        for(int i = this->size - 2; i >= 0; i--){
-            this->digits[i] += (carry << 16);
-            carry = this->digits[i] % b;
-            this->digits[i] = this->digits[i] / b;
-            //_digits[i] = ((_digits[i] % b) + ((_digits[i+1] * max_int_modulo) % b)) % b;
-        }
-        this->flatten();
+    void division_self(const unsigned int b){
+        //TODO fix this
+        BigInt temp({b});
+        this->division_self(temp);
+        // if(b<0){
+        //     this->negative = !this->negative;
+        // }
+        // if(this->size == 0){
+        //     return;
+        // }
+        // unsigned int carry = this->digits[this->size - 1] % b;
+        // this->digits[this->size - 1] = this->digits[this->size - 1] / b;
+        // int max_int_modulo = max_int % b;
+        // unsigned long int accumulator;
+        // for(int i = this->size - 2; i >= 0; i--){
+        //     accumulator =((unsigned long int) this->digits[i]) + ((unsigned long int) (carry << max_pow));
+        //     //this->digits[i] += (carry << max_pow);
+        //     carry = accumulator % b;
+        //     this->digits[i] = accumulator / b;
+        //     //_digits[i] = ((_digits[i] % b) + ((_digits[i+1] * max_int_modulo) % b)) % b;
+        // }
+        // this->flatten();
     }
 
     void division_self(const BigInt &b){
@@ -617,7 +632,9 @@ class BigInt{
         BigInt result = *this;
         int max_bit_divisor = divisor.max_bit();
         int max_bit = this->max_bit();
-
+        if(b.greater_than(*this)){
+            return result;
+        }
         divisor.shift_left_self(max_bit - max_bit_divisor);
         max_bit_divisor = max_bit;
         //BigInt temp;
@@ -648,10 +665,9 @@ class BigInt{
             return b;
         }
         b.modulus_self(m);
-
         BigInt zero({0});
         while(e > zero){
-            if(e.digits[0]&1){    
+            if(e.digits[0]&1){   
                 result.multiplication_self(b);
                 result.modulus_self(m);
             }
@@ -912,4 +928,5 @@ class BigInt{
         this->modulus_self(b);
     }
 };
+
 #endif

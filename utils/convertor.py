@@ -5,7 +5,7 @@ x = x.split()
 
 result = 0
 for i in range(len(x)):
-    result += int(x[len(x) - 1 - i]) * pow(pow(2,16),i)
+    result += int(x[len(x) - 1 - i]) * pow(pow(2,32),i)
 
 print(result)
 
