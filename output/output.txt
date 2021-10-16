@@ -1,8 +1,0 @@
-Test max bit 1 Pass
-Test max bit 2 Pass
-
-Test equal 1 Pass
-Test equal 2 Pass
-Test equal 3 Pass
-Test equal 4 Pass
-

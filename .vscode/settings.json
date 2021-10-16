@@ -52,6 +52,7 @@
         "compare": "cpp",
         "ranges": "cpp",
         "ios": "cpp",
-        "concepts": "cpp"
+        "concepts": "cpp",
+        "numbers": "cpp"
     }
 }
