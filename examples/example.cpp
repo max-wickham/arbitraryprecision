@@ -18,9 +18,9 @@ int main(){
             a.addition_self_unsigned(1);
         }
         count++;
-        cout << "count " << count << endl; 
+        //cout << "count " << count << endl; 
     }
-    cout << a.toString() << endl;
+    //cout << a.toString() << endl;
     BigInt b;
     b.random(313);
     count = 1;
@@ -30,19 +30,23 @@ int main(){
             b.addition_self_unsigned(1);
         }
         count++;
-        cout << "count " << count << endl; 
+        //cout << "count " << count << endl; 
     }
-    cout << a.toString() <<endl;
-    cout << b.toString() <<endl;
+    //cout << a.toString() <<endl;
+    //cout << b.toString() <<endl;
     Keys key = generateKey(a,b);
-    key.privateKey.print();
-    key.publicKey.print();
-    key.n.print();
+    //key.privateKey.print();
+    //key.publicKey.print();
+    //key.n.print();
     BigInt message({134,123,987});
     BigInt encrypted_message = encrypt(message,key.privateKey,key.n);
+    BigInt decrypted_message = encrypt(encrypted_message,key.publicKey,key.n);
+    //cout << key.publicKey.toString() << endl;
+    //cout << key.privateKey.toString() << endl;
+    cout << "Message: ";
+    message.print();
+    cout << "Encrypted Message: ";
     encrypted_message.print();
-    BigInt decrypted_meddage = encrypt(encrypted_message,key.publicKey,key.n);
-    cout << key.publicKey.toString() << endl;
-    cout << key.privateKey.toString() << endl;
-    decrypted_meddage.print();
+    cout << "Decrypted Message: ";
+    decrypted_message.print();
 }

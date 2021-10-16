@@ -14,9 +14,11 @@ class keys:
         self.n = n
     
 def encrypt(message,key):
+    return
     #encrypt the message
 
 def decrypt(message,key):
+    return
     #decrypt the message 
 
 def prime(n):

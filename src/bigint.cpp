@@ -100,7 +100,10 @@ bool BigInt::equal(int b) const
     {
         return false;
     }
-    return this->digits[0] == b;
+    if(b < 0){
+        return false;
+    }
+    return this->digits[0] == (unsigned int)b;
 }
 
 bool BigInt::greater_than(const BigInt &b) const
@@ -125,7 +128,10 @@ bool BigInt::greater_than(const int &b) const
     {
         return true;
     }
-    return digits[0] > b;
+    if(b < 0){
+        return false;
+    }
+    return digits[0] > (unsigned int)b;
 }
 
 bool BigInt::less_than(const BigInt &b) const
@@ -777,7 +783,6 @@ bool BigInt::is_prime(int k)
     BigInt r;
     r = n;
     r.subtraction_self_unsigned(1);
-    int test = 15 & 1;
     while (!(r.digits[0] & 1))
     {
         s.addition_self_unsigned(1);
